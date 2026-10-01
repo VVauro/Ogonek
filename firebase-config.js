@@ -13,6 +13,8 @@ const FIREBASE_CONFIG = {
   appId: "1:1092442429691:web:7a03f74ed7a4fa107f385e"
 };
 
-// Email, которому разрешены безлимитные нажатия (как у Wauro в локальной версии).
-// Впиши свой email от Firebase-аккаунта. Пусто — безлимита ни у кого нет.
-const ADMIN_EMAIL = "14523454@list.ru";
+// Email-адреса админов: безлимитные нажатия + кнопка 📊 (список пользователей).
+const ADMIN_EMAILS = [
+  "14523454@list.ru",
+  "assistant@ogonyok.app"
+];

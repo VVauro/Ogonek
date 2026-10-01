@@ -256,6 +256,17 @@
     background: none; border: none; color: #ff9d4d; font-size: 13px; cursor: pointer;
     font-family: inherit; padding: 2px; text-decoration: underline; align-self: center;
   }
+  .update-toast {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: 86px; z-index: 60;
+    background: #23252f; border: 1px solid rgba(255,122,26,.5); color: #fff;
+    border-radius: 12px; padding: 10px 14px; display: flex; gap: 12px; align-items: center;
+    box-shadow: 0 8px 30px rgba(0,0,0,.5); animation: viewIn .3s both;
+    font-size: 13.5px;
+  }
+  .update-toast button {
+    background: linear-gradient(135deg,#ff3b3b,#ff8a00); border: none; color: #fff;
+    font-weight: 800; border-radius: 10px; padding: 7px 14px; cursor: pointer; font-family: inherit;
+  }
   .danger-btn {
     background: none; border: 1px solid rgba(255,107,107,.5); color: #ff8f8f;
     font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 999px; cursor: pointer;
@@ -488,6 +499,9 @@
   </nav>
 </main>
 
+<!-- плашка обновления -->
+<div class="update-toast hide" id="updateToast"><span>🔄 Вышло обновление</span><button id="updateBtn">Обновить</button></div>
+
 <!-- админ-окошко: кто зарегистрировался -->
 <div class="modal-overlay hide" id="adminModal">
   <div class="modal-card">
@@ -508,6 +522,7 @@ const DEFAULT_NAME = 'Огонёк';
 const ADMIN = 'Wauro';
 const ADMIN_PASS = '1234';
 const AVATARS = ['👤','🔥','😎','💀','🤡','🐸','⚡','🌙','⭐','❄️','🎸','🎮','👑','🐺'];
+const APP_VERSION = '20261001-204901';
 
 const cloudConfigReady = typeof FIREBASE_CONFIG !== 'undefined'
   && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && !String(FIREBASE_CONFIG.apiKey).startsWith('PASTE');
@@ -1588,6 +1603,21 @@ async function ensureAdmin() {
 if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+
+/* --- проверка обновлений: если на сервере версия новее — предлагаем обновиться --- */
+const updateToast = $('updateToast');
+$('updateBtn').addEventListener('click', () => location.reload());
+async function checkForUpdate() {
+  try {
+    const res = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const text = await res.text();
+    const m = text.match(/APP_VERSION = '20261001-204901']+)'/);
+    if (m && m[1] !== APP_VERSION) updateToast.classList.remove('hide');
+  } catch (e) {}
+}
+setTimeout(checkForUpdate, 15000);
+setInterval(checkForUpdate, 30 * 60 * 1000);
 </script>
 </body>
 </html>

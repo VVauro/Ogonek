@@ -522,7 +522,7 @@ const DEFAULT_NAME = 'Огонёк';
 const ADMIN = 'Wauro';
 const ADMIN_PASS = '1234';
 const AVATARS = ['👤','🔥','😎','💀','🤡','🐸','⚡','🌙','⭐','❄️','🎸','🎮','👑','🐺'];
-const APP_VERSION = '20261001-204901';
+const APP_VERSION = '20261001-205340';
 
 const cloudConfigReady = typeof FIREBASE_CONFIG !== 'undefined'
   && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && !String(FIREBASE_CONFIG.apiKey).startsWith('PASTE');
@@ -1612,8 +1612,11 @@ async function checkForUpdate() {
     const res = await fetch(location.pathname + '?t=' + Date.now(), { cache: 'no-store' });
     if (!res.ok) return;
     const text = await res.text();
-    const m = text.match(/APP_VERSION = '20261001-204901']+)'/);
-    if (m && m[1] !== APP_VERSION) updateToast.classList.remove('hide');
+    // версию вытаскиваем аккуратно: автостамп деплоя не должен задеть этот код
+    const needle = 'const APP_VERSION = ' + String.fromCharCode(39);
+    const tail = text.split(needle)[1];
+    const liveVersion = tail ? tail.split(String.fromCharCode(39))[0] : '';
+    if (liveVersion && liveVersion !== APP_VERSION) updateToast.classList.remove('hide');
   } catch (e) {}
 }
 setTimeout(checkForUpdate, 15000);

@@ -1,0 +1,15 @@
+{
+  "name": "Огонёк",
+  "short_name": "Огонёк",
+  "description": "Зажигай свой огонёк раз в сутки и поддерживай серию",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0c0d12",
+  "theme_color": "#191b23",
+  "lang": "ru",
+  "icons": [
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Огонёк</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-512.png">
+<link rel="apple-touch-icon" href="icon-512.png">
+<meta name="theme-color" content="#191b23">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Огонёк">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: radial-gradient(1100px 700px at 50% -10%, #33202e 0%, #191b23 55%, #0c0d12 100%);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .app { display: flex; flex-direction: column; align-items: center; gap: 8px; width: min(100vw, 430px); padding: 24px; max-height: 100vh; overflow-y: auto; }
+  .hide { display: none !important; }
+
+  /* --- верхняя панель аккаунта --- */
+  .topbar { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+  .user-chip {
+    font-size: 13.5px; font-weight: 600; color: #ffb14d;
+    background: rgba(255,140,40,.1); border: 1px solid rgba(255,140,40,.3);
+    padding: 4px 12px; border-radius: 999px;
+    max-width: 65%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .logout-btn {
+    background: none; border: 1px solid rgba(255,255,255,.18); color: rgba(255,255,255,.6);
+    font-size: 12.5px; font-weight: 600; padding: 5px 12px; border-radius: 999px; cursor: pointer;
+    font-family: inherit; transition: .15s;
+  }
+  .logout-btn:hover { color: #fff; border-color: rgba(255,255,255,.45); }
+
+  /* --- вкладки вида --- */
+  .view-tabs {
+    display: flex; gap: 4px;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+    border-radius: 999px; padding: 4px;
+  }
+  .view-tab {
+    border: none; background: transparent; color: rgba(255,255,255,.55);
+    font-weight: 700; font-size: 13px; padding: 7px 13px; border-radius: 999px;
+    cursor: pointer; font-family: inherit; transition: .15s; white-space: nowrap;
+  }
+  .view-tab.active { background: linear-gradient(135deg,#ff3b3b,#ff8a00); color: #fff; box-shadow: 0 2px 12px rgba(255,90,20,.35); }
+
+  /* --- имя --- */
+  .name-row { display: flex; align-items: center; gap: 8px; max-width: 100%; }
+  .name {
+    font-size: 26px; font-weight: 800; letter-spacing: .3px;
+    text-shadow: 0 0 18px rgba(255,130,40,.45);
+    cursor: pointer;
+    border-bottom: 1.5px dashed rgba(255,255,255,.3);
+    padding-bottom: 2px;
+    max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .name:hover { border-bottom-color: rgba(255,255,255,.75); }
+  .edit-btn { background: none; border: none; font-size: 17px; cursor: pointer; opacity: .5; transition: .15s; padding: 4px; }
+  .edit-btn:hover { opacity: 1; transform: scale(1.15); }
+  #nameInput {
+    display: none; font-size: 22px; font-weight: 800; text-align: center;
+    background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.25);
+    border-radius: 12px; color: #fff; padding: 7px 14px; width: min(280px, 84vw); outline: none;
+    font-family: inherit;
+  }
+  #nameInput:focus { border-color: #ff7a1a; box-shadow: 0 0 0 3px rgba(255,122,26,.22); }
+
+  .streak {
+    display: none;
+    font-size: 13.5px; font-weight: 600; color: #ffb14d;
+    background: rgba(255,140,40,.1); border: 1px solid rgba(255,140,40,.35);
+    padding: 4px 14px; border-radius: 999px;
+  }
+  .streak.burnt { color: rgba(255,255,255,.5); background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.2); }
+
+  .stage { position: relative; display: flex; justify-content: center; }
+  .flame-btn {
+    background: none; border: none; cursor: pointer; padding: 26px 34px;
+    touch-action: manipulation; line-height: 1;
+  }
+  .flame {
+    display: block;
+    font-size: clamp(110px, 34vw, 168px);
+    filter: drop-shadow(0 0 30px rgba(255,115,0,.6)) drop-shadow(0 0 90px rgba(255,60,0,.35));
+    animation: flicker 1.7s ease-in-out infinite;
+  }
+  .flame-btn:active .flame { transform: scale(.88); }
+  @keyframes flicker {
+    0%, 100% { transform: scale(1) rotate(-2deg); }
+    30% { transform: scale(1.06) rotate(2deg); }
+    55% { transform: scale(.97) rotate(-1deg); }
+    80% { transform: scale(1.04) rotate(1.5deg); }
+  }
+  .pop { animation: pop .5s cubic-bezier(.2,1.6,.4,1) !important; }
+  @keyframes pop {
+    0% { transform: scale(1); }
+    35% { transform: scale(1.5) rotate(-6deg); }
+    70% { transform: scale(.88) rotate(3deg); }
+    100% { transform: scale(1); }
+  }
+  .flame-btn.done { cursor: default; }
+  .flame-btn.done .flame {
+    filter: grayscale(.8) drop-shadow(0 0 20px rgba(255,115,0,.12));
+    animation: none;
+    opacity: .4;
+  }
+  /* огонёк погас: серия сгорела, но нажать можно */
+  .flame-btn.dead .flame {
+    filter: grayscale(.9) drop-shadow(0 0 12px rgba(140,140,160,.15));
+    animation: none;
+    opacity: .45;
+  }
+
+  .particle {
+    position: absolute; left: 50%; top: 50%; font-size: 26px;
+    pointer-events: none; z-index: 5;
+    animation: rise var(--t) ease-out forwards;
+  }
+  @keyframes rise {
+    0% { transform: translate(-50%,-50%) scale(.5) rotate(0deg); opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1.15) rotate(var(--rot)); opacity: 0; }
+  }
+
+  .counter { font-size: 36px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .counter.bump { animation: bump .35s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes bump { 40% { transform: scale(1.35); } }
+  .counter-label { font-size: 13px; color: rgba(255,255,255,.4); margin-top: -4px; }
+
+  .status { font-size: 14.5px; color: rgba(255,255,255,.55); min-height: 20px; text-align: center; }
+  .status.ready { color: #ffd9a8; }
+  .status.dead { color: #b9b9c2; }
+  .timer { color: #ff9d4d; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .hint { font-size: 12px; color: rgba(255,255,255,.3); margin-top: 10px; text-align: center; line-height: 1.5; }
+  .reset-btn {
+    background: none; border: 1px solid rgba(255,255,255,.18); color: rgba(255,255,255,.55);
+    font-size: 12.5px; font-weight: 600; padding: 5px 12px; border-radius: 999px; cursor: pointer;
+    font-family: inherit; transition: .15s; margin-top: 2px;
+  }
+  .reset-btn:hover { color: #fff; border-color: rgba(255,255,255,.45); }
+
+  /* --- вкладка «Мои огоньки» --- */
+  #flameView, #listView, #profileView { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
+  .create-row { display: flex; gap: 8px; width: min(380px, 100%); margin-top: 6px; }
+  .create-input {
+    flex: 1; min-width: 0;
+    background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.2);
+    border-radius: 12px; color: #fff; padding: 10px 14px; font-size: 14px; outline: none; font-family: inherit;
+  }
+  .create-input:focus { border-color: #ff7a1a; box-shadow: 0 0 0 3px rgba(255,122,26,.2); }
+  .create-btn {
+    border: none; border-radius: 12px; padding: 10px 18px; font-size: 14px; font-weight: 800;
+    color: #fff; cursor: pointer; font-family: inherit;
+    background: linear-gradient(135deg,#ff3b3b,#ff8a00);
+    box-shadow: 0 4px 16px rgba(255,90,20,.35); transition: transform .12s, filter .15s;
+    white-space: nowrap;
+  }
+  .create-btn:hover { filter: brightness(1.08); }
+  .create-btn:active { transform: scale(.96); }
+  .flame-list { display: flex; flex-direction: column; gap: 8px; width: min(380px, 100%); }
+  .flame-row {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12);
+    border-radius: 14px; padding: 12px 14px; cursor: pointer; transition: .15s;
+  }
+  .flame-row:hover { border-color: rgba(255,122,26,.5); background: rgba(255,255,255,.08); }
+  .flame-row.active-row { border-color: rgba(255,140,40,.55); box-shadow: 0 0 18px rgba(255,90,20,.15); }
+  .flame-row-main { flex: 1; min-width: 0; }
+  .flame-row-name { font-weight: 700; font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .flame-row-stats { font-size: 12px; color: rgba(255,255,255,.45); margin-top: 3px; }
+  .badge-active {
+    font-size: 10.5px; color: #ffb14d; border: 1px solid rgba(255,140,40,.4);
+    background: rgba(255,140,40,.12); padding: 1px 8px; border-radius: 999px; margin-left: 6px;
+  }
+  .flame-row-actions { display: flex; gap: 6px; }
+  .row-btn {
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.15); border-radius: 10px;
+    font-size: 14px; padding: 6px 9px; cursor: pointer; transition: .15s; line-height: 1; font-family: inherit;
+  }
+  .row-btn:hover { border-color: rgba(255,255,255,.4); }
+  .row-btn.confirm { border-color: #ff6b6b; color: #ff6b6b; font-size: 11px; font-weight: 700; padding: 6px 8px; }
+
+  /* --- вкладка «Профиль» --- */
+  .profile-card {
+    display: flex; flex-direction: column; gap: 16px; width: min(360px, 100%);
+    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12);
+    border-radius: 16px; padding: 18px; margin-top: 6px;
+  }
+  .profile-head { display: flex; align-items: center; justify-content: center; gap: 14px; }
+  .profile-avatar { font-size: 44px; line-height: 1; filter: drop-shadow(0 0 14px rgba(255,130,40,.35)); }
+  .profile-name { font-weight: 800; font-size: 18px; }
+  .profile-email { font-size: 12.5px; color: rgba(255,255,255,.4); word-break: break-all; margin-top: 3px; }
+  .bind-row { display: flex; flex-direction: column; gap: 8px; }
+  .bind-row-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .bind-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.55); }
+  .bind-ok { font-size: 13px; color: #8fd694; text-align: right; word-break: break-all; }
+  .bind-controls { display: flex; gap: 8px; }
+  .bind-input {
+    flex: 1; min-width: 0;
+    background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.2);
+    border-radius: 10px; color: #fff; padding: 9px 12px; font-size: 13.5px; outline: none; font-family: inherit;
+  }
+  .bind-input:focus { border-color: #ff7a1a; box-shadow: 0 0 0 3px rgba(255,122,26,.2); }
+  .bind-btn {
+    border: none; border-radius: 10px; padding: 9px 14px; font-size: 13px; font-weight: 800;
+    color: #fff; cursor: pointer; font-family: inherit;
+    background: linear-gradient(135deg,#ff3b3b,#ff8a00); white-space: nowrap;
+  }
+  .bind-err { font-size: 12px; color: #ff7b7b; min-height: 14px; line-height: 1.35; }
+  .bind-err.ok { color: #8fd694; }
+  .unbind-btn {
+    background: none; border: 1px solid rgba(255,107,107,.5); color: #ff8f8f;
+    font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 999px; cursor: pointer;
+    font-family: inherit; transition: .15s;
+  }
+  .unbind-btn:hover { border-color: #ff6b6b; color: #ff6b6b; }
+  .avatar-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .avatar-btn {
+    font-size: 18px; line-height: 1; background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.15); border-radius: 10px; padding: 5px 9px; cursor: pointer; transition: .15s;
+  }
+  .avatar-btn:hover { border-color: rgba(255,255,255,.4); }
+  .avatar-btn.sel { border-color: #ff7a1a; background: rgba(255,122,26,.18); box-shadow: 0 0 10px rgba(255,122,26,.25); }
+  .forgot-btn {
+    background: none; border: none; color: #ff9d4d; font-size: 13px; cursor: pointer;
+    font-family: inherit; padding: 2px; text-decoration: underline; align-self: center;
+  }
+  .danger-btn {
+    background: none; border: 1px solid rgba(255,107,107,.5); color: #ff8f8f;
+    font-size: 12.5px; font-weight: 600; padding: 6px 14px; border-radius: 999px; cursor: pointer;
+    font-family: inherit; transition: .15s;
+  }
+  .danger-btn:hover { border-color: #ff6b6b; color: #ff6b6b; }
+  .danger-btn.confirm { background: rgba(255,107,107,.15); color: #ff6b6b; font-weight: 800; }
+
+  /* --- экран входа --- */
+  .auth-flame {
+    font-size: 58px; line-height: 1;
+    filter: drop-shadow(0 0 26px rgba(255,115,0,.6)) drop-shadow(0 0 70px rgba(255,60,0,.35));
+    animation: flicker 1.7s ease-in-out infinite;
+  }
+  .auth-title { font-size: 30px; font-weight: 800; text-shadow: 0 0 18px rgba(255,130,40,.45); }
+  .auth-sub { font-size: 13px; color: rgba(255,255,255,.45); }
+  .auth-tabs {
+    display: flex; gap: 4px; margin-top: 8px;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+    border-radius: 999px; padding: 4px;
+  }
+  .auth-tab {
+    border: none; background: transparent; color: rgba(255,255,255,.55);
+    font-weight: 700; font-size: 13px; padding: 8px 13px; border-radius: 999px;
+    cursor: pointer; font-family: inherit; transition: .15s; white-space: nowrap;
+  }
+  .auth-tab.active { background: linear-gradient(135deg,#ff3b3b,#ff8a00); color: #fff; box-shadow: 0 2px 12px rgba(255,90,20,.35); }
+  .auth-form { display: flex; flex-direction: column; gap: 10px; width: min(300px, 86vw); margin-top: 10px; }
+  .auth-input {
+    background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.2);
+    border-radius: 12px; color: #fff; padding: 11px 14px; font-size: 15px; outline: none;
+    font-family: inherit; width: 100%;
+  }
+  .auth-input:focus { border-color: #ff7a1a; box-shadow: 0 0 0 3px rgba(255,122,26,.2); }
+  .auth-error { color: #ff7b7b; font-size: 13px; min-height: 17px; text-align: center; line-height: 1.35; }
+  .auth-error.ok { color: #8fd694; }
+  .auth-submit {
+    border: none; border-radius: 12px; padding: 12px; font-size: 15.5px; font-weight: 800;
+    color: #fff; cursor: pointer; font-family: inherit;
+    background: linear-gradient(135deg,#ff3b3b,#ff8a00);
+    box-shadow: 0 4px 18px rgba(255,90,20,.4); transition: transform .12s, filter .15s;
+  }
+  .auth-submit:hover { filter: brightness(1.08); }
+  .auth-submit:active { transform: scale(.97); }
+  .google-btn {
+    display: none; align-items: center; justify-content: center; gap: 10px;
+    width: min(300px, 86vw); margin-top: 2px; padding: 11px; border-radius: 12px;
+    background: #fff; color: #1f1f1f; font-weight: 700; font-size: 14.5px; border: none;
+    cursor: pointer; font-family: inherit; transition: transform .12s, filter .15s;
+  }
+  .google-btn.show { display: flex; }
+  .google-btn:hover { filter: brightness(.97); }
+  .google-btn:active { transform: scale(.97); }
+  .google-btn .g {
+    font-weight: 900; font-size: 17px;
+    background: linear-gradient(45deg,#4285F4,#EA4335,#FBBC05,#34A853);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .auth-note { font-size: 12px; color: rgba(255,255,255,.3); text-align: center; line-height: 1.5; max-width: 300px; }
+</style>
+</head>
+<body>
+
+<!-- экран входа -->
+<main class="app" id="authScreen">
+  <div class="auth-flame">🔥</div>
+  <h1 class="auth-title">Огонёк</h1>
+  <div class="auth-sub">Заведи аккаунт, чтобы зажигать свой огонёк</div>
+
+  <div class="auth-tabs">
+    <button type="button" class="auth-tab active" id="tabLogin">Вход</button>
+    <button type="button" class="auth-tab" id="tabRegister">Регистрация</button>
+    <button type="button" class="auth-tab" id="tabSocial">Через соцсеть</button>
+  </div>
+
+  <form class="auth-form" id="authForm" novalidate>
+    <input class="auth-input" id="authUser" maxlength="60" placeholder="Имя аккаунта" autocomplete="username">
+    <input class="auth-input" id="authPass" type="password" maxlength="40" placeholder="Пароль" autocomplete="current-password">
+    <input class="auth-input" id="authPass2" type="password" maxlength="40" placeholder="Повторите пароль" autocomplete="new-password" style="display:none">
+    <div class="auth-error" id="authError"></div>
+    <button type="submit" class="auth-submit" id="authSubmit">Войти</button>
+    <button type="button" class="forgot-btn hide" id="forgotBtn">Забыли пароль?</button>
+  </form>
+
+  <button type="button" class="google-btn" id="googleBtn"><span class="g">G</span> Продолжить с Google</button>
+
+  <div class="auth-note" id="authNote">Аккаунт и огоньки хранятся в этом браузере — приложение локальное, без сервера.</div>
+</main>
+
+<!-- экран огоньков -->
+<main class="app hide" id="appScreen">
+  <div class="topbar">
+    <span class="user-chip" id="userChip"></span>
+    <button class="logout-btn" id="logoutBtn">Выйти</button>
+  </div>
+
+  <div class="view-tabs">
+    <button type="button" class="view-tab active" id="tabFlameView">🔥 Огонёк</button>
+    <button type="button" class="view-tab" id="tabListView">📋 Мои огоньки <span id="flameCount"></span></button>
+    <button type="button" class="view-tab" id="tabProfileView">👤 Профиль</button>
+  </div>
+
+  <!-- вид: активный огонёк -->
+  <div id="flameView">
+    <div class="name-row" id="nameRow">
+      <h1 class="name" id="name" title="Нажми, чтобы переименовать">Огонёк</h1>
+      <button class="edit-btn" id="editBtn" title="Переименовать">✏️</button>
+    </div>
+    <input id="nameInput" maxlength="30" placeholder="Имя огонька" autocomplete="off">
+
+    <div class="streak" id="streak"></div>
+
+    <div class="stage" id="stage">
+      <button class="flame-btn" id="flameBtn" aria-label="Зажечь огонёк"><span class="flame" id="flame">🔥</span></button>
+    </div>
+
+    <div class="counter" id="counter">0</div>
+    <div class="counter-label" id="counterLabel">зажиганий</div>
+    <div class="status ready" id="status">Нажми на огонёк, чтобы зажечь! 🔥</div>
+
+    <div class="hint">Пропустишь день — серия сгорит 💨<br>Нажми на имя, чтобы переименовать огонёк.</div>
+    <button class="reset-btn" id="resetBtn" title="Обнулить счётчик, серию и суточный лимит">♻️ Сбросить огонёк</button>
+  </div>
+
+  <!-- вид: список огоньков -->
+  <div id="listView" class="hide">
+    <div class="create-row">
+      <input class="create-input" id="newFlameName" maxlength="30" placeholder="Цель нового огонька, напр. «Спортзал»" autocomplete="off">
+      <button class="create-btn" id="createBtn">Создать</button>
+    </div>
+    <div class="flame-list" id="flameList"></div>
+    <div class="hint">Клик по огоньку — открыть его. ♻️ — сбросить, 🗑️ — удалить (два нажатия).</div>
+  </div>
+
+  <!-- вид: профиль -->
+  <div id="profileView" class="hide">
+    <div class="profile-card">
+      <div class="profile-head">
+        <div class="profile-avatar" id="profileAvatar">👤</div>
+        <div>
+          <div class="profile-name" id="profileName"></div>
+          <div class="profile-email" id="profileEmail"></div>
+        </div>
+      </div>
+      <div class="bind-row hide" id="profileNameRow">
+        <div class="bind-row-top"><div class="bind-title">Имя профиля</div></div>
+        <div class="bind-controls">
+          <input class="bind-input" id="profileNameInput" maxlength="20" placeholder="Как тебя звать?" autocomplete="off">
+          <button class="bind-btn" id="saveNameBtn">ОК</button>
+        </div>
+      </div>
+      <div class="bind-row hide" id="avatarRow">
+        <div class="bind-row-top"><div class="bind-title">Аватар</div></div>
+        <div class="avatar-row" id="avatarRowBtns"></div>
+      </div>
+      <div class="bind-row hide" id="verifyRow">
+        <div class="bind-row-top"><div class="bind-title">Подтверждение email</div><span id="verifyStatus" class="bind-err" style="min-height:0"></span></div>
+        <button class="reset-btn" id="verifyBtn" style="align-self:flex-start;margin-top:0">Отправить письмо с подтверждением</button>
+      </div>
+      <div class="bind-row hide" id="passRow">
+        <div class="bind-row-top"><div class="bind-title">Смена пароля</div></div>
+        <input class="bind-input" id="oldPass" type="password" maxlength="40" placeholder="Текущий пароль" autocomplete="current-password">
+        <input class="bind-input" id="newPass" type="password" maxlength="40" placeholder="Новый пароль (от 6 символов)" autocomplete="new-password">
+        <input class="bind-input" id="newPass2" type="password" maxlength="40" placeholder="Повторите новый пароль" autocomplete="new-password">
+        <div class="bind-err" id="passErr"></div>
+        <button class="bind-btn" id="changePassBtn" style="align-self:flex-start">Сменить пароль</button>
+      </div>
+      <div class="bind-row" id="bindVk"></div>
+      <div class="bind-row" id="bindGoogle"></div>
+    </div>
+    <button class="reset-btn hide" id="importBtn" title="Перенести огонёк из локальной версии в облако">📦 Перенести местный огонёк в облако</button>
+    <div class="bind-row hide" id="delPassRow" style="width:min(360px,100%)">
+      <div class="bind-row-top"><div class="bind-title">Подтверди паролем для удаления</div></div>
+      <div class="bind-controls">
+        <input class="bind-input" id="delPass" type="password" maxlength="40" placeholder="Текущий пароль" autocomplete="current-password">
+        <button class="danger-btn" id="delPassBtn">Удалить</button>
+      </div>
+    </div>
+    <button class="danger-btn hide" id="deleteAccBtn">🗑️ Удалить аккаунт навсегда</button>
+    <div class="bind-err" id="dangerMsg" style="text-align:center"></div>
+    <div class="auth-note" id="profileNote" style="max-width:340px"></div>
+  </div>
+</main>
+
+<script src="firebase-config.js"></script>
+<script>
+'use strict';
+const OLD_KEY = 'ogonyok-v1';          // данные до появления аккаунтов
+const ACC_KEY = 'ogonyok-accounts';    // локальные аккаунты (без облака)
+const SESSION_KEY = 'ogonyok-session'; // локальная сессия
+const DEFAULT_NAME = 'Огонёк';
+const ADMIN = 'Wauro';
+const ADMIN_PASS = '1234';
+const AVATARS = ['👤','🔥','😎','💀','🤡','🐸','⚡','🌙','⭐','❄️','🎸','🎮','👑','🐺'];
+
+const cloudConfigReady = typeof FIREBASE_CONFIG !== 'undefined'
+  && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && !String(FIREBASE_CONFIG.apiKey).startsWith('PASTE');
+const adminEmail = (typeof ADMIN_EMAIL !== 'undefined' ? ADMIN_EMAIL : '').trim().toLowerCase();
+
+function loadJSON(key, def) {
+  try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; } catch (e) { return def; }
+}
+function saveJSON(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+
+let accounts = loadJSON(ACC_KEY, {});
+let current = null;   // имя аккаунта (или email-префикс в облаке)
+let data = null;      // { flames, activeId, name, avatar }
+let cloud = null;     // { authMod, fsMod, auth, db, user } — облачный режим
+let unsubSnap = null; // живая подписка на данные из облака
+
+const dataKey = u => 'ogonyok-data-' + u;
+const newId = () => 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const defaultFlame = () => ({ id: newId(), name: DEFAULT_NAME, count: 0, streak: 0, last: null });
+
+function loadUserData() {
+  const raw = loadJSON(dataKey(current), null);
+  if (raw && Array.isArray(raw.flames) && raw.flames.length) {
+    data = raw;
+  } else if (raw && typeof raw.count === 'number') {
+    const f = { id: newId(), name: (raw.name || '').trim().slice(0, 30) || DEFAULT_NAME, count: raw.count, streak: raw.streak || 0, last: raw.last || null };
+    data = { flames: [f], activeId: f.id };
+    saveJSON(dataKey(current), data);
+  } else {
+    const f = defaultFlame();
+    data = { flames: [f], activeId: f.id };
+    saveJSON(dataKey(current), data);
+  }
+  data.name = data.name || '';
+  data.avatar = data.avatar || '👤';
+  if (!data.flames.some(f => f.id === data.activeId)) data.activeId = data.flames[0].id;
+  normalizeFlames();
+}
+
+// локальные данные до переезда в облако (для кнопки переноса)
+function readLocalLegacy() {
+  const v1 = loadJSON(OLD_KEY, null);
+  if (v1 && typeof v1.count === 'number') {
+    return { name: (v1.name || '').trim().slice(0, 30) || DEFAULT_NAME, count: v1.count, streak: v1.streak || 0, last: v1.last || null };
+  }
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith('ogonyok-data-')) continue;
+      const d = loadJSON(k, null);
+      if (!d) continue;
+      if (Array.isArray(d.flames) && d.flames.length) return { flames: d.flames, activeId: d.activeId };
+      if (typeof d.count === 'number') return { name: (d.name || '').trim().slice(0, 30) || DEFAULT_NAME, count: d.count, streak: d.streak || 0, last: d.last || null };
+    }
+  } catch (e) {}
+  return null;
+}
+
+function saveUserData() {
+  if (!current || !data) return;
+  if (cloud) {
+    const ref = cloud.fsMod.doc(cloud.db, 'users', cloud.user.uid);
+    cloud.fsMod.setDoc(ref, { flames: data.flames, activeId: data.activeId, name: data.name || '', avatar: data.avatar || '👤' })
+      .catch(e => console.warn('Не удалось сохранить в облако:', e && e.code));
+    return;
+  }
+  saveJSON(dataKey(current), data);
+}
+
+const activeFlame = () => data.flames.find(f => f.id === data.activeId) || data.flames[0];
+// админ может жечь без лимита — нигде в интерфейсе это не подсвечивается
+const isAdmin = () => {
+  if (cloud) return !!(cloud.user && cloud.user.email && adminEmail && cloud.user.email.toLowerCase() === adminEmail);
+  return !!(current && accounts[current] && accounts[current].admin);
+};
+const canPressFlame = f => isAdmin() || f.last !== today();
+
+// пропуск дня (последнее нажатие старше вчерашнего) сжигает серию до нуля
+function isDead(f) { return !!f.last && f.last !== today() && f.last !== yesterday(); }
+function normalizeFlames() {
+  if (!data) return false;
+  let changed = false;
+  for (const f of data.flames) {
+    if (isDead(f) && f.streak > 0) { f.streak = 0; changed = true; }
+  }
+  if (changed) saveUserData();
+  return changed;
+}
+
+async function hashPass(p) {
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ogonyok:' + p));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  } catch (e) {
+    let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+    for (let i = 0; i < p.length; i++) {
+      const c = p.charCodeAt(i);
+      h1 = Math.imul(h1 ^ c, 2654435761); h2 = Math.imul(h2 ^ c, 1597334677);
+    }
+    h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+    h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h2 >>> 13), 3266489909);
+    return 'fb' + (h2 >>> 0).toString(16) + (h1 >>> 0).toString(16);
+  }
+}
+
+const $ = id => document.getElementById(id);
+const authScreen = $('authScreen'), appScreen = $('appScreen'),
+      tabLogin = $('tabLogin'), tabRegister = $('tabRegister'), tabSocial = $('tabSocial'),
+      authForm = $('authForm'), authUser = $('authUser'), authPass = $('authPass'),
+      authPass2 = $('authPass2'), authError = $('authError'), authSubmit = $('authSubmit'),
+      googleBtn = $('googleBtn'), authNote = $('authNote'), forgotBtn = $('forgotBtn'),
+      userChip = $('userChip'), logoutBtn = $('logoutBtn'),
+      tabFlameView = $('tabFlameView'), tabListView = $('tabListView'), tabProfileView = $('tabProfileView'),
+      flameCount = $('flameCount'),
+      flameViewEl = $('flameView'), listViewEl = $('listView'), profileViewEl = $('profileView'),
+      profileAvatar = $('profileAvatar'), profileName = $('profileName'), profileEmail = $('profileEmail'),
+      profileNameRow = $('profileNameRow'), profileNameInput = $('profileNameInput'), saveNameBtn = $('saveNameBtn'),
+      avatarRow = $('avatarRow'), avatarRowBtns = $('avatarRowBtns'),
+      verifyRow = $('verifyRow'), verifyStatus = $('verifyStatus'), verifyBtn = $('verifyBtn'),
+      passRow = $('passRow'), oldPass = $('oldPass'), newPass = $('newPass'), newPass2 = $('newPass2'),
+      passErr = $('passErr'), changePassBtn = $('changePassBtn'),
+      profileNote = $('profileNote'), importBtn = $('importBtn'),
+      delPassRow = $('delPassRow'), delPass = $('delPass'), delPassBtn = $('delPassBtn'),
+      deleteAccBtn = $('deleteAccBtn'), dangerMsg = $('dangerMsg'),
+      bindVk = $('bindVk'), bindGoogle = $('bindGoogle'),
+      newFlameName = $('newFlameName'), createBtn = $('createBtn'), flameList = $('flameList'),
+      nameEl = $('name'), nameRow = $('nameRow'), nameInput = $('nameInput'),
+      editBtn = $('editBtn'), streakEl = $('streak'), flameBtn = $('flameBtn'),
+      flame = $('flame'), stage = $('stage'), counterEl = $('counter'),
+      counterLabel = $('counterLabel'), statusEl = $('status'), resetBtn = $('resetBtn');
+
+const pad = n => String(n).padStart(2, '0');
+const dateStr = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const today = () => dateStr(new Date());
+const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dateStr(d); };
+const msToMidnight = () => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1) - n; };
+function fmt(ms) {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  return pad(Math.floor(s / 3600)) + ':' + pad(Math.floor(s % 3600 / 60)) + ':' + pad(s % 60);
+}
+function plural(n, forms) {
+  const a = n % 10, b = n % 100;
+  if (a === 1 && b !== 11) return forms[0];
+  if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return forms[1];
+  return forms[2];
+}
+
+function updateChip() {
+  const av = (data && data.avatar) || '👤';
+  const nm = (cloud && data && data.name) ? data.name : current;
+  userChip.textContent = av + ' ' + nm;
+}
+
+function render() {
+  if (!current || !data) return;
+  const f = activeFlame();
+  const dead = isDead(f);
+  nameEl.textContent = f.name;
+  document.title = f.name;
+  updateChip();
+  counterEl.textContent = f.count;
+  counterLabel.textContent = plural(f.count, ['зажигание', 'зажигания', 'зажиганий']);
+  flameCount.textContent = '(' + data.flames.length + ')';
+
+  const alive = f.last && (f.last === today() || f.last === yesterday());
+  if (dead) {
+    streakEl.textContent = '💨 серия сгорела';
+    streakEl.className = 'streak burnt';
+    streakEl.style.display = 'inline-block';
+  } else if (alive && f.streak > 0) {
+    streakEl.textContent = '🔥 ' + f.streak + ' ' + plural(f.streak, ['день', 'дня', 'дней']) + ' подряд';
+    streakEl.className = 'streak';
+    streakEl.style.display = 'inline-block';
+  } else {
+    streakEl.style.display = 'none';
+  }
+
+  const can = canPressFlame(f);
+  flameBtn.classList.toggle('done', !can);
+  flameBtn.classList.toggle('dead', dead && can);
+  flameBtn.disabled = !can;
+  if (!can) {
+    statusEl.className = 'status';
+    statusEl.innerHTML = 'Уже горит! Следующий через <span class="timer">' + fmt(msToMidnight()) + '</span>';
+  } else if (dead) {
+    statusEl.className = 'status dead';
+    statusEl.textContent = '💨 Огонёк погас — зажги его снова!';
+  } else {
+    statusEl.className = 'status ready';
+    statusEl.textContent = 'Нажми на огонёк, чтобы зажечь! 🔥';
+  }
+}
+
+function burst() {
+  const glyphs = ['🔥', '✨', '⭐', '💥'];
+  for (let i = 0; i < 16; i++) {
+    const p = document.createElement('span');
+    p.className = 'particle';
+    p.textContent = glyphs[Math.floor(Math.random() * glyphs.length)];
+    p.style.setProperty('--dx', (Math.random() * 260 - 130).toFixed(0) + 'px');
+    p.style.setProperty('--dy', (-(60 + Math.random() * 150)).toFixed(0) + 'px');
+    p.style.setProperty('--rot', (Math.random() * 80 - 40).toFixed(0) + 'deg');
+    p.style.setProperty('--t', (0.8 + Math.random() * 0.6).toFixed(2) + 's');
+    p.style.fontSize = (16 + Math.random() * 18).toFixed(0) + 'px';
+    stage.appendChild(p);
+    p.addEventListener('animationend', () => p.remove());
+  }
+}
+
+flameBtn.addEventListener('click', () => {
+  if (!current || !data) return;
+  const f = activeFlame();
+  if (!canPressFlame(f)) return;
+  f.count++;
+  f.streak = f.last === yesterday() ? f.streak + 1 : 1;
+  f.last = today();
+  saveUserData();
+  render();
+  flame.classList.remove('pop');
+  void flame.offsetWidth;
+  flame.classList.add('pop');
+  counterEl.classList.remove('bump');
+  void counterEl.offsetWidth;
+  counterEl.classList.add('bump');
+  burst();
+});
+
+/* --- сброс активного огонька --- */
+resetBtn.addEventListener('click', () => {
+  if (!current || !data) return;
+  const f = activeFlame();
+  f.count = 0;
+  f.streak = 0;
+  f.last = null;
+  saveUserData();
+  render();
+});
+
+/* --- переименование огонька --- */
+let editing = false;
+function startEdit() {
+  if (editing || !data) return;
+  editing = true;
+  nameRow.style.display = 'none';
+  nameInput.style.display = 'block';
+  nameInput.value = activeFlame().name;
+  nameInput.focus();
+  nameInput.select();
+}
+function endEdit(commit) {
+  if (!editing) return;
+  editing = false;
+  if (commit && data) {
+    const v = nameInput.value.trim().slice(0, 30);
+    if (v) { activeFlame().name = v; saveUserData(); }
+  }
+  nameInput.style.display = 'none';
+  nameRow.style.display = 'flex';
+  render();
+}
+nameEl.addEventListener('click', startEdit);
+editBtn.addEventListener('click', startEdit);
+nameInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); endEdit(true); }
+  else if (e.key === 'Escape') endEdit(false);
+});
+nameInput.addEventListener('blur', () => endEdit(true));
+
+/* --- вкладки вида --- */
+function showView(v) {
+  tabFlameView.classList.toggle('active', v === 'flame');
+  tabListView.classList.toggle('active', v === 'list');
+  tabProfileView.classList.toggle('active', v === 'profile');
+  flameViewEl.classList.toggle('hide', v !== 'flame');
+  listViewEl.classList.toggle('hide', v !== 'list');
+  profileViewEl.classList.toggle('hide', v !== 'profile');
+  if (v === 'list') renderList();
+  if (v === 'profile') renderProfile();
+}
+tabFlameView.addEventListener('click', () => showView('flame'));
+tabListView.addEventListener('click', () => showView('list'));
+tabProfileView.addEventListener('click', () => showView('profile'));
+
+/* --- список огоньков --- */
+function renderList() {
+  flameCount.textContent = '(' + data.flames.length + ')';
+  flameList.textContent = '';
+  data.flames.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'flame-row' + (f.id === data.activeId ? ' active-row' : '');
+
+    const main = document.createElement('div');
+    main.className = 'flame-row-main';
+    const nm = document.createElement('div');
+    nm.className = 'flame-row-name';
+    nm.textContent = f.name;
+    if (f.id === data.activeId) {
+      const b = document.createElement('span');
+      b.className = 'badge-active';
+      b.textContent = 'активный';
+      nm.appendChild(b);
+    }
+    const st = document.createElement('div');
+    st.className = 'flame-row-stats';
+    const dead = isDead(f);
+    const alive = f.last && (f.last === today() || f.last === yesterday());
+    let stat = f.count + ' ' + plural(f.count, ['зажигание', 'зажигания', 'зажиганий']);
+    stat += ' · ' + (dead ? '💨 серия сгорела'
+      : (alive && f.streak > 0 ? '🔥 ' + f.streak + ' ' + plural(f.streak, ['день', 'дня', 'дней']) + ' подряд' : 'без серии'));
+    stat += ' · ' + (f.last === today() ? 'горит сегодня' : 'готов к нажатию');
+    st.textContent = stat;
+    main.append(nm, st);
+
+    const actions = document.createElement('div');
+    actions.className = 'flame-row-actions';
+
+    const rb = document.createElement('button');
+    rb.className = 'row-btn';
+    rb.title = 'Сбросить счётчик';
+    rb.textContent = '♻️';
+    rb.addEventListener('click', ev => {
+      ev.stopPropagation();
+      f.count = 0; f.streak = 0; f.last = null;
+      saveUserData();
+      renderList();
+      render();
+    });
+
+    const db = document.createElement('button');
+    db.className = 'row-btn';
+    db.title = 'Удалить огонёк';
+    db.textContent = '🗑️';
+    db.addEventListener('click', ev => {
+      ev.stopPropagation();
+      if (db.dataset.confirm) {
+        data.flames = data.flames.filter(x => x.id !== f.id);
+        if (!data.flames.length) data.flames.push(defaultFlame());
+        if (!data.flames.some(x => x.id === data.activeId)) data.activeId = data.flames[0].id;
+        saveUserData();
+        renderList();
+        render();
+      } else {
+        db.dataset.confirm = '1';
+        db.textContent = 'точно?';
+        db.classList.add('confirm');
+        setTimeout(() => {
+          if (db.isConnected) { db.textContent = '🗑️'; db.classList.remove('confirm'); delete db.dataset.confirm; }
+        }, 2500);
+      }
+    });
+
+    actions.append(rb, db);
+    row.append(main, actions);
+    row.addEventListener('click', () => {
+      data.activeId = f.id;
+      saveUserData();
+      showView('flame');
+      render();
+    });
+    flameList.appendChild(row);
+  });
+  if (!data.flames.length) {
+    const e = document.createElement('div');
+    e.className = 'list-empty';
+    e.textContent = 'Пока нет огоньков — создай первый!';
+    flameList.appendChild(e);
+  }
+}
+
+function createFlame() {
+  if (!current || !data) return;
+  const v = newFlameName.value.trim().slice(0, 30);
+  if (!v) { newFlameName.focus(); return; }
+  const f = { id: newId(), name: v, count: 0, streak: 0, last: null };
+  data.flames.push(f);
+  data.activeId = f.id;
+  newFlameName.value = '';
+  saveUserData();
+  showView('flame');
+  render();
+}
+createBtn.addEventListener('click', createFlame);
+newFlameName.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); createFlame(); } });
+
+/* --- профиль --- */
+function renderProfile() {
+  if (!current || !data) return;
+  const av = data.avatar || '👤';
+  profileAvatar.textContent = av;
+  profileName.textContent = av + ' ' + (cloud && data.name ? data.name : current);
+
+  if (cloud) {
+    const u = cloud.user;
+    profileEmail.textContent = u && u.email ? u.email : '';
+    profileNote.textContent = 'Аккаунт в облаке Firebase: работает на телефоне и ПК с одинаковым входом.';
+    // имя профиля
+    profileNameRow.classList.remove('hide');
+    profileNameInput.value = data.name || '';
+    // аватар
+    avatarRow.classList.remove('hide');
+    renderAvatars();
+    // верификация email
+    verifyRow.classList.remove('hide');
+    const ev = u && u.emailVerified;
+    verifyStatus.textContent = ev ? '✅ подтверждён' : '⚠️ не подтверждён';
+    verifyStatus.className = ev ? 'bind-ok' : 'bind-err';
+    verifyBtn.classList.toggle('hide', !!ev);
+    // смена пароля
+    passRow.classList.remove('hide');
+    passErr.textContent = '';
+    oldPass.value = newPass.value = newPass2.value = '';
+    // локальные привязки ВК в облаке не нужны — личность подтверждает Firebase
+    bindVk.classList.add('hide');
+    bindGoogle.classList.add('hide');
+    // удаление аккаунта
+    deleteAccBtn.classList.remove('hide');
+    delPassRow.classList.add('hide');
+    dangerMsg.textContent = '';
+    // перенос местных огоньков
+    const pristine = data.flames.length === 1
+      && data.flames[0].count === 0 && !data.flames[0].last && data.flames[0].name === DEFAULT_NAME;
+    importBtn.classList.toggle('hide', !(pristine && readLocalLegacy()));
+  } else {
+    profileEmail.textContent = '';
+    profileNote.textContent = 'Привязка хранится локально в этом браузере.';
+    profileNameRow.classList.add('hide');
+    avatarRow.classList.add('hide');
+    verifyRow.classList.add('hide');
+    passRow.classList.add('hide');
+    deleteAccBtn.classList.add('hide');
+    delPassRow.classList.add('hide');
+    dangerMsg.textContent = '';
+    importBtn.classList.add('hide');
+    bindVk.classList.remove('hide');
+    bindGoogle.classList.remove('hide');
+    renderBind(bindVk, 'vk', 'ВКонтакте', 'vk.com/твой_профиль');
+    renderBind(bindGoogle, 'google', 'Google', 'имя@gmail.com');
+  }
+}
+
+function renderAvatars() {
+  avatarRowBtns.textContent = '';
+  AVATARS.forEach(a => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'avatar-btn' + ((data.avatar || '👤') === a ? ' sel' : '');
+    b.textContent = a;
+    b.addEventListener('click', () => {
+      data.avatar = a;
+      saveUserData();
+      updateChip();
+      profileAvatar.textContent = a;
+      renderAvatars();
+    });
+    avatarRowBtns.appendChild(b);
+  });
+}
+
+saveNameBtn.addEventListener('click', () => {
+  if (!cloud || !data) return;
+  data.name = profileNameInput.value.trim().slice(0, 20);
+  saveUserData();
+  updateChip();
+  const av = data.avatar || '👤';
+  profileName.textContent = av + ' ' + (data.name || current);
+});
+
+verifyBtn.addEventListener('click', async () => {
+  if (!cloud || !cloud.user) return;
+  try {
+    await cloud.authMod.sendEmailVerification(cloud.user);
+    verifyStatus.className = 'bind-ok';
+    verifyStatus.textContent = '✉️ письмо отправлено — проверь почту';
+  } catch (e) {
+    verifyStatus.className = 'bind-err';
+    verifyStatus.textContent = mapAuthError(e && e.code);
+  }
+});
+
+changePassBtn.addEventListener('click', async () => {
+  if (!cloud || !cloud.user) return;
+  passErr.classList.remove('ok');
+  passErr.textContent = '';
+  const u = cloud.user;
+  if (newPass.value.length < 6) { passErr.textContent = 'Новый пароль: минимум 6 символов'; return; }
+  if (newPass.value !== newPass2.value) { passErr.textContent = 'Новые пароли не совпадают'; return; }
+  try {
+    const cred = cloud.authMod.EmailAuthProvider.credential(u.email, oldPass.value);
+    await cloud.authMod.reauthenticateWithCredential(u, cred);
+    await cloud.authMod.updatePassword(u, newPass.value);
+    passErr.classList.add('ok');
+    passErr.textContent = 'Пароль изменён ✅';
+    oldPass.value = newPass.value = newPass2.value = '';
+    setTimeout(() => { passErr.classList.remove('ok'); passErr.textContent = ''; }, 5000);
+  } catch (e) {
+    passErr.textContent = (e && e.code === 'auth/wrong-password') ? 'Текущий пароль неверный' : mapAuthError(e && e.code);
+  }
+});
+
+importBtn.addEventListener('click', () => {
+  if (!cloud || !data) return;
+  const legacy = readLocalLegacy();
+  if (!legacy) return;
+  if (legacy.flames) {
+    data = { flames: legacy.flames, activeId: legacy.activeId || legacy.flames[0].id, name: data.name, avatar: data.avatar };
+  } else {
+    const f = { id: newId(), name: legacy.name, count: legacy.count, streak: legacy.streak, last: legacy.last };
+    data = { flames: [f], activeId: f.id, name: data.name, avatar: data.avatar };
+  }
+  saveUserData();
+  showView('flame');
+  render();
+});
+
+/* --- удаление аккаунта --- */
+let delArm = false;
+deleteAccBtn.addEventListener('click', async () => {
+  if (!cloud || !cloud.user) return;
+  dangerMsg.classList.remove('ok');
+  dangerMsg.textContent = '';
+  if (!delArm) {
+    delArm = true;
+    deleteAccBtn.textContent = 'точно удалить? нажми ещё раз';
+    deleteAccBtn.classList.add('confirm');
+    setTimeout(() => {
+      if (delArm) {
+        delArm = false;
+        deleteAccBtn.textContent = '🗑️ Удалить аккаунт навсегда';
+        deleteAccBtn.classList.remove('confirm');
+      }
+    }, 4000);
+    return;
+  }
+  delArm = false;
+  deleteAccBtn.textContent = '🗑️ Удалить аккаунт навсегда';
+  deleteAccBtn.classList.remove('confirm');
+  const u = cloud.user;
+  const wipe = async () => {
+    try { await cloud.fsMod.deleteDoc(cloud.fsMod.doc(cloud.db, 'users', u.uid)); } catch (e) {}
+    await u.delete(); // дальше onAuthStateChanged покажет экран входа
+  };
+  try {
+    await wipe();
+  } catch (e) {
+    if (e && e.code === 'auth/requires-recent-login') {
+      delPassRow.classList.remove('hide');
+      dangerMsg.textContent = 'Сессия устарела — введи пароль для подтверждения';
+      delPass.focus();
+    } else {
+      dangerMsg.textContent = mapAuthError(e && e.code);
+    }
+  }
+});
+delPassBtn.addEventListener('click', async () => {
+  if (!cloud || !cloud.user) return;
+  const u = cloud.user;
+  try {
+    const cred = cloud.authMod.EmailAuthProvider.credential(u.email, delPass.value);
+    await cloud.authMod.reauthenticateWithCredential(u, cred);
+    try { await cloud.fsMod.deleteDoc(cloud.fsMod.doc(cloud.db, 'users', u.uid)); } catch (e) {}
+    await u.delete();
+  } catch (e) {
+    dangerMsg.textContent = (e && e.code === 'auth/wrong-password') ? 'Неверный пароль' : mapAuthError(e && e.code);
+  }
+});
+
+/* --- локальная привязка ВК и Google (только режим без облака) --- */
+function parseVk(v) {
+  v = v.trim()
+    .replace(/^https?:\/\//i, '')
+    .replace(/^m\.vk\.com\//i, '')
+    .replace(/^(vk\.com|vk\.me|vkontakte\.ru)\/?/i, '');
+  v = v.split(/[/?#]/)[0].trim();
+  return /^[A-Za-z0-9_]{3,}$/.test(v) ? v.toLowerCase() : null;
+}
+
+function renderBind(container, net, title, placeholder) {
+  container.textContent = '';
+  const links = (accounts[current] && accounts[current].links) || {};
+  const val = links[net];
+
+  const top = document.createElement('div');
+  top.className = 'bind-row-top';
+  const t = document.createElement('div');
+  t.className = 'bind-title';
+  t.textContent = title;
+  top.appendChild(t);
+  container.appendChild(top);
+
+  if (val) {
+    const ok = document.createElement('div');
+    ok.className = 'bind-ok';
+    ok.textContent = '✅ ' + (net === 'vk' ? 'vk.com/' + val : val);
+    ok.style.fontSize = '13.5px';
+    top.appendChild(ok);
+    const ub = document.createElement('button');
+    ub.className = 'unbind-btn';
+    ub.textContent = 'Отвязать';
+    ub.addEventListener('click', () => {
+      const a = accounts[current];
+      delete a.links[net];
+      if (!Object.keys(a.links).length) delete a.links;
+      saveJSON(ACC_KEY, accounts);
+      renderProfile();
+    });
+    container.appendChild(ub);
+    return;
+  }
+
+  const row = document.createElement('div');
+  row.className = 'bind-controls';
+  const inp = document.createElement('input');
+  inp.className = 'bind-input';
+  inp.placeholder = placeholder;
+  inp.maxLength = 60;
+  inp.autocomplete = 'off';
+  const btn = document.createElement('button');
+  btn.className = 'bind-btn';
+  btn.textContent = 'Привязать';
+  const errD = document.createElement('div');
+  errD.className = 'bind-err';
+  btn.addEventListener('click', () => {
+    errD.textContent = '';
+    const raw = inp.value.trim();
+    let val;
+    if (net === 'vk') {
+      val = parseVk(raw);
+      if (!val) { errD.textContent = 'Не похоже на ссылку ВК (пример: vk.com/durov)'; return; }
+    } else {
+      val = raw.toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) { errD.textContent = 'Введи email вида name@gmail.com'; return; }
+    }
+    for (const [name, a] of Object.entries(accounts)) {
+      if (name !== current && a.links && a.links[net] === val) {
+        errD.textContent = 'Этот ' + (net === 'vk' ? 'профиль ВК' : 'email') + ' уже привязан к другому аккаунту';
+        return;
+      }
+    }
+    const a = accounts[current];
+    a.links = a.links || {};
+    a.links[net] = val;
+    saveJSON(ACC_KEY, accounts);
+    renderProfile();
+  });
+  row.append(inp, btn);
+  container.append(row, errD);
+}
+
+/* --- таймер суток --- */
+let lastCan = null;
+function tick() {
+  if (!current || !data) return;
+  const broken = normalizeFlames();
+  const can = canPressFlame(activeFlame());
+  if (broken || can !== lastCan) { lastCan = can; render(); }
+  else if (!can) {
+    const t = statusEl.querySelector('.timer');
+    if (t) t.textContent = fmt(msToMidnight());
+  }
+}
+setInterval(tick, 500);
+document.addEventListener('visibilitychange', tick);
+
+/* --- аккаунты --- */
+function mapAuthError(code) {
+  const M = {
+    'auth/email-already-in-use': 'Такой email уже зарегистрирован — войдите',
+    'auth/invalid-email': 'Некорректный email',
+    'auth/weak-password': 'Пароль слишком слабый — минимум 6 символов',
+    'auth/missing-password': 'Введите пароль',
+    'auth/invalid-credential': 'Неверный email или пароль',
+    'auth/wrong-password': 'Неверный пароль',
+    'auth/user-not-found': 'Нет такого аккаунта — зарегистрируйтесь',
+    'auth/too-many-requests': 'Слишком много попыток — попробуйте позже',
+    'auth/network-request-failed': 'Нет соединения с интернетом',
+    'auth/unauthorized-domain': 'Этот домен не добавлен в Firebase (см. шаг 8 инструкции)',
+    'auth/configuration-not-found': 'Вход не включён в Firebase — сделай шаг 3 инструкции (Authentication → Email/Password)',
+    'auth/operation-not-allowed': 'Этот способ входа не включён в Firebase (шаг 3 инструкции)',
+    'auth/requires-recent-login': 'Сессия устарела — подтвердите паролем',
+    'auth/popup-closed-by-user': 'Окно Google закрыто',
+    'auth/popup-blocked': 'Браузер заблокировал окно — разрешите всплывающие окна'
+  };
+  return M[code] || 'Ошибка: ' + code;
+}
+
+let authMode = 'login';
+function setAuthMode(mode) {
+  authMode = mode;
+  tabLogin.classList.toggle('active', mode === 'login');
+  tabRegister.classList.toggle('active', mode === 'register');
+  tabSocial.classList.toggle('active', mode === 'social');
+  const social = mode === 'social';
+  authPass.style.display = social ? 'none' : 'block';
+  authPass2.style.display = (!social && mode === 'register') ? 'block' : 'none';
+  authUser.placeholder = social ? 'Ссылка ВК или email Google' : (cloud ? 'Email' : 'Имя аккаунта');
+  authUser.autocomplete = social ? 'off' : (cloud ? 'email' : 'username');
+  authUser.type = cloud && !social ? 'email' : 'text';
+  authSubmit.textContent = mode === 'register' ? 'Создать аккаунт' : 'Войти';
+  forgotBtn.classList.toggle('hide', !(cloud && mode === 'login'));
+  authError.classList.remove('ok');
+  authError.textContent = '';
+}
+tabLogin.addEventListener('click', () => setAuthMode('login'));
+tabRegister.addEventListener('click', () => setAuthMode('register'));
+tabSocial.addEventListener('click', () => setAuthMode('social'));
+
+function showAuth(mode) {
+  current = null;
+  data = null;
+  if (unsubSnap) { unsubSnap(); unsubSnap = null; }
+  appScreen.classList.add('hide');
+  authScreen.classList.remove('hide');
+  tabSocial.classList.toggle('hide', !!cloud);
+  googleBtn.classList.toggle('show', !!cloud);
+  authNote.textContent = cloud
+    ? 'Аккаунты в облаке Firebase: один вход на телефоне и ПК.'
+    : 'Аккаунт и огоньки хранятся в этом браузере — приложение локальное, без сервера.';
+  setAuthMode(mode || 'login');
+  authUser.focus();
+}
+async function showApp() {
+  authScreen.classList.add('hide');
+  appScreen.classList.remove('hide');
+  if (cloud) {
+    await loadCloudData();
+    subscribeCloud();
+  } else {
+    loadUserData();
+  }
+  showView('flame');
+  render();
+}
+
+authForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const u = authUser.value.trim();
+  const p = authPass.value;
+  const err = msg => { authError.classList.remove('ok'); authError.textContent = msg; };
+
+  /* --- облачный режим: Firebase --- */
+  if (cloud) {
+    const email = u.toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err('Введите корректный email');
+    try {
+      if (authMode === 'register') {
+        if (p.length < 6) return err('Пароль: минимум 6 символов');
+        if (p !== authPass2.value) return err('Пароли не совпадают');
+        await cloud.authMod.createUserWithEmailAndPassword(cloud.auth, email, p);
+      } else {
+        await cloud.authMod.signInWithEmailAndPassword(cloud.auth, email, p);
+      }
+      authUser.value = '';
+      authPass.value = '';
+      // дальше вход подхватывает onAuthStateChanged
+    } catch (e2) {
+      return err(mapAuthError(e2 && e2.code));
+    }
+    return;
+  }
+
+  /* --- локальный режим --- */
+  if (authMode === 'social') {
+    if (!u) return err('Введи ссылку ВК или email Google');
+    let found = null;
+    if (u.includes('@')) {
+      const em = u.toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return err('Введи ссылку ВК или email');
+      for (const [name, a] of Object.entries(accounts)) {
+        if (a.links && a.links.google === em) { found = name; break; }
+      }
+      if (!found) return err('Этот Google не привязан ни к одному аккаунту');
+    } else {
+      const id = parseVk(u);
+      if (!id) return err('Введи ссылку ВК или email Google');
+      for (const [name, a] of Object.entries(accounts)) {
+        if (a.links && a.links.vk === id) { found = name; break; }
+      }
+      if (!found) return err('Эта страница ВК не привязана. Создай аккаунт и привяжи её в профиле');
+    }
+    current = found;
+    saveJSON(SESSION_KEY, found);
+    authUser.value = '';
+    showApp();
+    return;
+  }
+
+  if (authMode === 'register') {
+    if (u.length < 2 || u.length > 20) return err('Имя аккаунта: от 2 до 20 символов');
+    if (p.length < 4) return err('Пароль: минимум 4 символа');
+    if (p !== authPass2.value) return err('Пароли не совпадают');
+    if (accounts[u]) return err('Такой аккаунт уже есть — просто войдите');
+    accounts[u] = { hash: await hashPass(p), created: new Date().toISOString() };
+    saveJSON(ACC_KEY, accounts);
+    // если до аккаунтов огонёк уже жгли — переносим его новому аккаунту
+    const old = loadJSON(OLD_KEY, null);
+    if (old && typeof old === 'object' && typeof old.count === 'number') {
+      saveJSON(dataKey(u), old);
+      try { localStorage.removeItem(OLD_KEY); } catch (err2) {}
+    }
+    current = u;
+    saveJSON(SESSION_KEY, u);
+    authPass.value = authPass2.value = '';
+    showApp();
+  } else {
+    if (!u || !accounts[u]) return err('Нет такого аккаунта — создайте его на соседней вкладке');
+    if (accounts[u].hash !== await hashPass(p)) return err('Неверный пароль');
+    current = u;
+    saveJSON(SESSION_KEY, u);
+    authPass.value = '';
+    showApp();
+  }
+});
+
+forgotBtn.addEventListener('click', async () => {
+  if (!cloud) return;
+  authError.classList.remove('ok');
+  authError.textContent = '';
+  const em = authUser.value.trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
+    authError.textContent = 'Введи свой email в поле выше и нажми ещё раз';
+    return;
+  }
+  try {
+    await cloud.authMod.sendPasswordResetEmail(cloud.auth, em);
+    authError.classList.add('ok');
+    authError.textContent = '✉️ Письмо для сброса пароля отправлено на ' + em;
+  } catch (e) {
+    authError.textContent = mapAuthError(e && e.code);
+  }
+});
+
+googleBtn.addEventListener('click', async () => {
+  if (!cloud) return;
+  authError.classList.remove('ok');
+  authError.textContent = '';
+  try {
+    const provider = new cloud.authMod.GoogleAuthProvider();
+    await cloud.authMod.signInWithPopup(cloud.auth, provider);
+  } catch (e) {
+    authError.textContent = mapAuthError(e && e.code);
+  }
+});
+
+logoutBtn.addEventListener('click', async () => {
+  if (cloud) {
+    try { await cloud.authMod.signOut(cloud.auth); } catch (e) {}
+    return; // экран входа покажет onAuthStateChanged
+  }
+  try { localStorage.removeItem(SESSION_KEY); } catch (e) {}
+  authUser.value = '';
+  showAuth('login');
+});
+
+/* --- облако Firebase --- */
+async function loadCloudData() {
+  const ref = cloud.fsMod.doc(cloud.db, 'users', cloud.user.uid);
+  let raw = null;
+  try {
+    const snap = await cloud.fsMod.getDoc(ref);
+    raw = snap.exists() ? snap.data() : null;
+  } catch (e) {
+    console.warn('Не удалось загрузить данные из облака:', e && e.code);
+  }
+  if (raw && Array.isArray(raw.flames) && raw.flames.length) {
+    data = { flames: raw.flames, activeId: raw.activeId, name: raw.name || '', avatar: raw.avatar || '👤' };
+  } else {
+    const f = defaultFlame();
+    data = { flames: [f], activeId: f.id, name: '', avatar: '👤' };
+    saveUserData(); // создаём документ в облаке
+  }
+  if (!data.flames.some(f => f.id === data.activeId)) data.activeId = data.flames[0].id;
+  normalizeFlames();
+}
+
+// живая синхронизация: изменения с других устройств прилетают сразу
+let applyingSnap = false;
+function subscribeCloud() {
+  if (unsubSnap) unsubSnap();
+  const ref = cloud.fsMod.doc(cloud.db, 'users', cloud.user.uid);
+  unsubSnap = cloud.fsMod.onSnapshot(ref, snap => {
+    if (!cloud || !cloud.user || applyingSnap || !snap.exists() || !data) return;
+    const raw = snap.data();
+    const incoming = {
+      flames: Array.isArray(raw.flames) ? raw.flames : [],
+      activeId: raw.activeId,
+      name: raw.name || '',
+      avatar: raw.avatar || '👤'
+    };
+    const same = JSON.stringify([data.flames, data.activeId, data.name || '', data.avatar || '👤'])
+      === JSON.stringify([incoming.flames, incoming.activeId, incoming.name, incoming.avatar]);
+    if (same || !incoming.flames.length) return;
+    applyingSnap = true;
+    data = incoming;
+    if (!data.flames.some(f => f.id === data.activeId)) data.activeId = data.flames[0].id;
+    normalizeFlames();
+    render();
+    if (!listViewEl.classList.contains('hide')) renderList();
+    applyingSnap = false;
+  }, e => console.warn('Синхронизация прервалась:', e && e.code));
+}
+
+async function initFirebase() {
+  if (!cloudConfigReady) return false;
+  try {
+    const V = '10.12.2';
+    const [appMod, authMod, fsMod] = await Promise.all([
+      import('https://www.gstatic.com/firebasejs/' + V + '/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/' + V + '/firebase-auth.js'),
+      import('https://www.gstatic.com/firebasejs/' + V + '/firebase-firestore.js')
+    ]);
+    const app = appMod.initializeApp(FIREBASE_CONFIG);
+    const auth = authMod.getAuth(app);
+    const db = fsMod.getFirestore(app);
+    cloud = { authMod, fsMod, auth, db, user: null };
+    authMod.onAuthStateChanged(auth, u => {
+      cloud.user = u;
+      if (u) {
+        current = ((u.displayName || (u.email || 'user').split('@')[0]) || 'user').slice(0, 24);
+        showApp();
+      } else {
+        showAuth('login');
+      }
+    });
+    return true;
+  } catch (e) {
+    console.warn('Firebase недоступен, работаем локально:', e);
+    cloud = null;
+    return false;
+  }
+}
+
+/* --- локальный админ (Wauro) --- */
+async function ensureAdmin() {
+  let changed = false;
+  if (!accounts[ADMIN]) {
+    accounts[ADMIN] = { hash: await hashPass(ADMIN_PASS), created: new Date().toISOString(), admin: true };
+    changed = true;
+  } else if (!accounts[ADMIN].admin) {
+    accounts[ADMIN].admin = true;
+    changed = true;
+  }
+  if (changed) saveJSON(ACC_KEY, accounts);
+  // безаккаунтный огонёк из старой версии переезжает админу
+  if (!loadJSON(dataKey(ADMIN), null)) {
+    const old = loadJSON(OLD_KEY, null);
+    if (old && typeof old === 'object' && typeof old.count === 'number') {
+      saveJSON(dataKey(ADMIN), old);
+      try { localStorage.removeItem(OLD_KEY); } catch (e) {}
+    }
+  }
+}
+
+/* --- запуск --- */
+(async () => {
+  const cloudOn = await initFirebase();
+  if (cloudOn) return; // входом управляет onAuthStateChanged
+  await ensureAdmin();
+  const sess = loadJSON(SESSION_KEY, null);
+  if (sess && accounts[sess]) { current = sess; showApp(); }
+  else showAuth('login');
+})();
+
+/* --- PWA: регистрация сервис-воркера (работает только по http/https) --- */
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>

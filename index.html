@@ -511,7 +511,7 @@ const AVATARS = ['👤','🔥','😎','💀','🤡','🐸','⚡','🌙','⭐','�
 
 const cloudConfigReady = typeof FIREBASE_CONFIG !== 'undefined'
   && FIREBASE_CONFIG && FIREBASE_CONFIG.apiKey && !String(FIREBASE_CONFIG.apiKey).startsWith('PASTE');
-const adminEmail = (typeof ADMIN_EMAIL !== 'undefined' ? ADMIN_EMAIL : '').trim().toLowerCase();
+const adminEmails = (typeof ADMIN_EMAILS !== 'undefined' ? ADMIN_EMAILS : []).map(e => String(e).toLowerCase());
 
 function loadJSON(key, def) {
   try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; } catch (e) { return def; }
@@ -580,7 +580,7 @@ function saveUserData() {
 const activeFlame = () => data.flames.find(f => f.id === data.activeId) || data.flames[0];
 // админ может жечь без лимита — нигде в интерфейсе это не подсвечивается
 const isAdmin = () => {
-  if (cloud) return !!(cloud.user && cloud.user.email && adminEmail && cloud.user.email.toLowerCase() === adminEmail);
+  if (cloud) return !!(cloud.user && cloud.user.email && adminEmails.includes(cloud.user.email.toLowerCase()));
   return !!(current && accounts[current] && accounts[current].admin);
 };
 const canPressFlame = f => isAdmin() || f.last !== today();

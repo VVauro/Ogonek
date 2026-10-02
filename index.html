@@ -560,7 +560,7 @@ const DEFAULT_NAME = 'Огонёк';
 const ADMIN = 'Wauro';
 const ADMIN_PASS = '1234';
 const AVATARS = ['👤','🔥','😎','💀','🤡','🐸','⚡','🌙','⭐','❄️','🎸','🎮','👑','🐺'];
-const APP_VERSION = '20261002-191856';
+const APP_VERSION = '20261002-192850';
 const MAX_FREEZE = 2;
 const FREEZE_EVERY_DAYS = 7;
 
@@ -1323,7 +1323,7 @@ function renderDiscordCloud() {
   btn.addEventListener('click', () => {
     errD.textContent = '';
     const v = inp.value.trim().replace(/^@/, '');
-    if (!/^[A-Za-z0-9._]{2,32}$/.test(v)) { errD.textContent = 'Ник Discord: 2–32 символа, буквы/цифры/._ (без @)'; return; }
+    if (!/^[A-Za-z0-9._]{2,32}(#[0-9]{1,4})?$/.test(v)) { errD.textContent = 'Ник Discord: 2–32 символа, буквы/цифры/._ (можно с #1234)'; return; }
     data.discord = v.toLowerCase();
     saveUserData();
     renderProfile();

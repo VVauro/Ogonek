@@ -604,7 +604,7 @@ const SKINS = [
   { id: 'gold',     name: 'Золотое',      css: 'saturate(2.2) brightness(1.25) hue-rotate(-10deg)', glow1: 'rgba(255,215,0,.7)', glow2: 'rgba(255,180,0,.4)', price: 300 },
   { id: 'rainbow',  name: 'Радуга',       css: '__rainbow__', glow1: 'rgba(255,255,255,.4)', glow2: 'rgba(200,200,255,.25)', price: 450 },
 ];
-const APP_VERSION = '20261002-202148';
+const APP_VERSION = '20261002-202457';
 const MAX_FREEZE = 2;
 const FREEZE_EVERY_DAYS = 7;
 
@@ -844,7 +844,7 @@ function renderSkins() {
     nm.className = 'skin-name';
     nm.textContent = s.name;
     btn.append(fl, nm);
-    if (s.price > 0 && !owned) {
+    if (s.price > 0 && !owned && !isAdmin()) {
       const hint = document.createElement('span');
       hint.className = 'skin-hint';
       const canBuy = totalPresses >= s.price;

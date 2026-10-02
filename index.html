@@ -275,6 +275,28 @@
   .danger-btn:hover { border-color: #ff6b6b; color: #ff6b6b; }
   .danger-btn.confirm { background: rgba(255,107,107,.15); color: #ff6b6b; font-weight: 800; }
 
+  /* --- скины --- */
+  .skin-section-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.55); }
+  .skin-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .skin-btn {
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.15);
+    border-radius: 12px; padding: 10px 12px; cursor: pointer; font-family: inherit;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 72px; transition: .15s;
+  }
+  .skin-btn:hover { border-color: rgba(255,255,255,.4); }
+  .skin-btn.sel { border-color: #ff7a1a; background: rgba(255,122,26,.15); box-shadow: 0 0 12px rgba(255,122,26,.3); }
+  .skin-btn.locked { opacity: .4; }
+  .skin-btn .skin-flame { font-size: 28px; line-height: 1; }
+  .skin-btn .skin-flame.sp-ice { filter: hue-rotate(160deg); }
+  .skin-btn .skin-flame.sp-emerald { filter: hue-rotate(100deg); }
+  .skin-btn .skin-flame.sp-amethyst { filter: hue-rotate(240deg); }
+  .skin-btn .skin-flame.sp-ghost { filter: grayscale(1) brightness(1.6); }
+  .skin-btn .skin-flame.sp-blood { filter: hue-rotate(-25deg) saturate(2); }
+  .skin-btn .skin-flame.sp-gold { filter: saturate(2.2) brightness(1.25) hue-rotate(-10deg); }
+  .skin-btn .skin-flame.sp-rainbow { animation: rainbowHue 4s linear infinite; }
+  .skin-btn .skin-name { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.6); }
+  .skin-btn .skin-hint { font-size: 9px; color: rgba(255,255,255,.35); }
+
   /* --- админ-окошко --- */
   .modal-overlay {
     position: fixed; inset: 0; z-index: 50;
@@ -378,6 +400,16 @@
 
   /* --- плавные переходы --- */
   .flame { transition: filter .6s ease, opacity .6s ease; }
+  .flame.skin-rainbow { animation: rainbowHue 4s linear infinite, flicker 1.7s ease-in-out infinite; }
+  @keyframes rainbowHue {
+    0%   { filter: hue-rotate(0deg) drop-shadow(0 0 30px rgba(255,0,0,.55)) drop-shadow(0 0 90px rgba(200,0,0,.3)); }
+    16%  { filter: hue-rotate(60deg) drop-shadow(0 0 30px rgba(255,255,0,.55)) drop-shadow(0 0 90px rgba(200,200,0,.3)); }
+    33%  { filter: hue-rotate(120deg) drop-shadow(0 0 30px rgba(0,255,0,.55)) drop-shadow(0 0 90px rgba(0,200,0,.3)); }
+    50%  { filter: hue-rotate(180deg) drop-shadow(0 0 30px rgba(0,200,255,.55)) drop-shadow(0 0 90px rgba(0,150,255,.3)); }
+    66%  { filter: hue-rotate(240deg) drop-shadow(0 0 30px rgba(100,0,255,.55)) drop-shadow(0 0 90px rgba(80,0,255,.3)); }
+    83%  { filter: hue-rotate(300deg) drop-shadow(0 0 30px rgba(255,0,200,.55)) drop-shadow(0 0 90px rgba(200,0,200,.3)); }
+    100% { filter: hue-rotate(360deg) drop-shadow(0 0 30px rgba(255,0,0,.55)) drop-shadow(0 0 90px rgba(200,0,0,.3)); }
+  }
   .status { transition: color .35s ease; }
   .view-anim-in { animation: viewIn .28s cubic-bezier(.2,.8,.3,1) both; }
   .view-anim-out { animation: viewOut .15s ease both; pointer-events: none; }
@@ -495,6 +527,8 @@
         <div class="bind-row-top"><div class="bind-title">Аватар</div></div>
         <div class="avatar-row" id="avatarRowBtns"></div>
       </div>
+      <div class="skin-section-title" style="margin-top:4px">🎨 Скин огонька</div>
+      <div class="skin-row" id="skinRow"></div>
       <div class="bind-row" id="freezeRow" style="display:none">
         <div class="bind-row-top"><div class="bind-title">Заморозки серии</div><span id="freezeInfo" class="bind-ok" style="min-height:0"></span></div>
         <div class="bind-err" style="min-height:0">❄️ Спасают серию, если пропустил день. Старт — 1 шт, каждые 7 дней серии +1 (макс. 2).</div>
@@ -560,7 +594,17 @@ const DEFAULT_NAME = 'Огонёк';
 const ADMIN = 'Wauro';
 const ADMIN_PASS = '1234';
 const AVATARS = ['👤','🔥','😎','💀','🤡','🐸','⚡','🌙','⭐','❄️','🎸','🎮','👑','🐺'];
-const APP_VERSION = '20261002-192850';
+const SKINS = [
+  { id: 'classic',  name: 'Классика',     css: '',                                                                                       price: 0 },
+  { id: 'ice',      name: 'Ледяное',      css: 'hue-rotate(160deg)', glow1: 'rgba(100,200,255,.6)', glow2: 'rgba(40,140,255,.35)', unlockStreak: 7,  price: 0 },
+  { id: 'emerald',  name: 'Изумруд',      css: 'hue-rotate(100deg)', glow1: 'rgba(100,255,150,.6)', glow2: 'rgba(0,200,80,.35)',  unlockStreak: 14, price: 0 },
+  { id: 'amethyst', name: 'Аметист',      css: 'hue-rotate(240deg)', glow1: 'rgba(200,120,255,.6)', glow2: 'rgba(140,60,255,.35)', unlockStreak: 30, price: 0 },
+  { id: 'ghost',    name: 'Призрак',      css: 'grayscale(1) brightness(1.6)', glow1: 'rgba(200,200,230,.5)', glow2: 'rgba(150,150,190,.3)', unlockPresses: 50, price: 0 },
+  { id: 'blood',    name: 'Кровавое',     css: 'hue-rotate(-25deg) saturate(2)', glow1: 'rgba(255,30,50,.6)', glow2: 'rgba(200,0,30,.35)', price: 150 },
+  { id: 'gold',     name: 'Золотое',      css: 'saturate(2.2) brightness(1.25) hue-rotate(-10deg)', glow1: 'rgba(255,215,0,.7)', glow2: 'rgba(255,180,0,.4)', price: 300 },
+  { id: 'rainbow',  name: 'Радуга',       css: '__rainbow__', glow1: 'rgba(255,255,255,.4)', glow2: 'rgba(200,200,255,.25)', price: 450 },
+];
+const APP_VERSION = '20261002-201713';
 const MAX_FREEZE = 2;
 const FREEZE_EVERY_DAYS = 7;
 
@@ -600,6 +644,10 @@ function loadUserData() {
   data.avatar = data.avatar || '👤';
   if (!data.flames.some(f => f.id === data.activeId)) data.activeId = data.flames[0].id;
   data.flames.forEach(f => { f.freeze = f.freeze || 0; });
+  data.skin = data.skin || 'classic';
+  data.skins = Array.isArray(data.skins) ? data.skins : ['classic'];
+  data.bestStreak = data.bestStreak || 0;
+  if (!data.skins.includes('classic')) data.skins.unshift('classic');
   normalizeFlames();
 }
 
@@ -626,18 +674,21 @@ function saveUserData() {
   if (!current || !data) return;
   if (cloud) {
     const ref = cloud.fsMod.doc(cloud.db, 'users', cloud.user.uid);
-    cloud.fsMod.setDoc(ref, { flames: data.flames, activeId: data.activeId, name: data.name || '', avatar: data.avatar || '👤', discord: data.discord || '' })
+    cloud.fsMod.setDoc(ref, { flames: data.flames, activeId: data.activeId, name: data.name || '', avatar: data.avatar || '👤', discord: data.discord || '', skin: data.skin || 'classic', skins: data.skins || ['classic'], bestStreak: data.bestStreak || 0 })
       .catch(e => console.warn('Не удалось сохранить в облако:', e && e.code));
-    // лидерборд: лучшая живая серия + всего зажиганий
+    // лидерборд: лучшая живая серия + всего зажиганий + скин
     let bestStreak = 0, totalPresses = 0;
     data.flames.forEach(f => {
       totalPresses += f.count || 0;
       if (f.last && (f.last === today() || f.last === yesterday()) && f.streak > bestStreak) bestStreak = f.streak;
     });
+    const skinObj = SKINS.find(s => s.id === (data.skin || 'classic')) || SKINS[0];
     const lb = cloud.fsMod.doc(cloud.db, 'leaderboard', cloud.user.uid);
     cloud.fsMod.setDoc(lb, {
       name: (data.name || current || 'игрок'),
       avatar: data.avatar || '👤',
+      skin: skinObj.id,
+      skinCss: skinObj.css,
       streak: bestStreak,
       presses: totalPresses,
       litToday: data.flames.some(f => f.last === today()),
@@ -722,6 +773,7 @@ const authScreen = $('authScreen'), appScreen = $('appScreen'),
       deleteAccBtn = $('deleteAccBtn'), dangerMsg = $('dangerMsg'),
       bindVk = $('bindVk'), bindGoogle = $('bindGoogle'), bindDiscord = $('bindDiscord'),
       freezeRow = $('freezeRow'), freezeInfo = $('freezeInfo'), freezeChip = $('freezeChip'),
+      skinRow = $('skinRow'),
       newFlameName = $('newFlameName'), createBtn = $('createBtn'), flameList = $('flameList'),
       nameEl = $('name'), nameRow = $('nameRow'), nameInput = $('nameInput'),
       editBtn = $('editBtn'), streakEl = $('streak'), flameBtn = $('flameBtn'),
@@ -742,6 +794,94 @@ function plural(n, forms) {
   if (a === 1 && b !== 11) return forms[0];
   if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return forms[1];
   return forms[2];
+}
+
+function updateChip() {
+  const av = (data && data.avatar) || '👤';
+  const nm = (cloud && data && data.name) ? data.name : current;
+  userChip.textContent = av + ' ' + nm;
+}
+
+/* --- скины --- */
+function skinOwned(id) { return (data.skins || ['classic']).includes(id); }
+function skinUnlocked(s) {
+  if (!s.unlockStreak && !s.unlockPresses) return true; // стартовый
+  if (s.unlockStreak) return (data.bestStreak || 0) >= s.unlockStreak;
+  if (s.unlockPresses) {
+    const total = data.flames.reduce((sum, f) => sum + (f.count || 0), 0);
+    return total >= s.unlockPresses;
+  }
+  return false;
+}
+function applySkin(f) {
+  const skin = SKINS.find(s => s.id === (data.skin || 'classic')) || SKINS[0];
+  const el = $('flame');
+  el.classList.remove('skin-rainbow');
+  if (skin.css === '__rainbow__') {
+    el.classList.add('skin-rainbow');
+    el.style.filter = '';
+  } else if (skin.css) {
+    el.style.filter = skin.css + ' drop-shadow(0 0 30px ' + (skin.glow1 || 'rgba(255,115,0,.6)') + ') drop-shadow(0 0 90px ' + (skin.glow2 || 'rgba(255,60,0,.35)') + ')';
+  } else {
+    el.style.filter = '';
+  }
+}
+function renderSkins() {
+  skinRow.textContent = '';
+  const totalPresses = data.flames.reduce((sum, f) => sum + (f.count || 0), 0);
+  SKINS.forEach(s => {
+    const owned = skinOwned(s.id);
+    const sel = (data.skin || 'classic') === s.id;
+    const unlocked = owned || skinUnlocked(s) || (s.price > 0 && totalPresses >= s.price);
+    const btn = document.createElement('button');
+    btn.className = 'skin-btn' + (sel ? ' sel' : '') + (!unlocked && !owned ? ' locked' : '');
+    const fl = document.createElement('span');
+    fl.className = 'skin-flame sp-' + s.id;
+    fl.textContent = '🔥';
+    const nm = document.createElement('span');
+    nm.className = 'skin-name';
+    nm.textContent = s.name;
+    btn.append(fl, nm);
+    if (s.price > 0 && !owned) {
+      const hint = document.createElement('span');
+      hint.className = 'skin-hint';
+      const canBuy = totalPresses >= s.price;
+      hint.textContent = canBuy ? '💰 ' + s.price : '🔒 ' + s.price;
+      hint.style.color = canBuy ? '#8fd694' : 'rgba(255,255,255,.35)';
+      btn.appendChild(hint);
+      if (canBuy) {
+        btn.style.borderColor = 'rgba(143,214,148,.5)';
+        btn.title = 'Купить за ' + s.price + ' зажиганий';
+        btn.addEventListener('click', () => {
+          data.skins = data.skins || [];
+          if (!data.skins.includes(s.id)) data.skins.push(s.id);
+          data.skin = s.id;
+          saveUserData();
+          renderSkins();
+          applySkin();
+        });
+      } else {
+        btn.title = 'Нужно ' + s.price + ' зажиганий (есть ' + totalPresses + ')';
+      }
+    } else {
+      const hint = document.createElement('span');
+      hint.className = 'skin-hint';
+      if (s.unlockStreak) hint.textContent = owned ? (sel ? '✓' : '✔') : '🔥 ' + s.unlockStreak + ' дн.';
+      else if (s.unlockPresses) hint.textContent = owned ? (sel ? '✓' : '✔') : '⚡ ' + s.unlockPresses;
+      else hint.textContent = sel ? '✓' : 'старт';
+      hint.style.color = sel ? '#ffb14d' : 'rgba(255,255,255,.35)';
+      btn.appendChild(hint);
+      btn.addEventListener('click', () => {
+        if (!owned && !skinUnlocked(s)) return;
+        data.skin = s.id;
+        if (!skinOwned(s.id)) { data.skins = data.skins || []; data.skins.push(s.id); }
+        saveUserData();
+        renderSkins();
+        applySkin();
+      });
+    }
+    skinRow.appendChild(btn);
+  });
 }
 
 function updateChip() {
@@ -771,6 +911,7 @@ function render() {
   }
   streakEl.className = streakCls + (streakText ? ' show' : '');
   streakEl.textContent = streakText;
+  applySkin(f);
   const fz = activeFlame().freeze || 0;
   freezeChip.textContent = '❄️ ' + fz + '/' + MAX_FREEZE;
   freezeChip.title = 'Заморозки: спасают серию при пропуске дня. +1 за каждые ' + FREEZE_EVERY_DAYS + ' дней серии.';
@@ -814,6 +955,7 @@ flameBtn.addEventListener('click', () => {
   f.count++;
   f.streak = f.last === yesterday() ? f.streak + 1 : 1;
   f.last = today();
+  if (f.streak > (data.bestStreak || 0)) data.bestStreak = f.streak;
   if (f.streak > 0 && f.streak % FREEZE_EVERY_DAYS === 0 && (f.freeze || 0) < MAX_FREEZE) {
     f.freeze = (f.freeze || 0) + 1;
     freezeChip.classList.add('glow');
@@ -1097,6 +1239,10 @@ function renderProfile() {
   freezeInfo.textContent = fzTotal > 0
     ? '❄️ всего ' + fzTotal
     : 'пока нет — одна за каждые ' + FREEZE_EVERY_DAYS + ' дней серии';
+
+  // скины
+  skinRow.style.display = 'flex';
+  renderSkins();
 
   if (cloud) {
     renderDiscordCloud();
@@ -1726,6 +1872,10 @@ async function loadCloudData() {
   }
   if (!data.flames.some(f => f.id === data.activeId)) data.activeId = data.flames[0].id;
   data.flames.forEach(f => { f.freeze = f.freeze || 0; });
+  data.skin = data.skin || 'classic';
+  data.skins = Array.isArray(data.skins) ? data.skins : ['classic'];
+  data.bestStreak = data.bestStreak || 0;
+  if (!data.skins.includes('classic')) data.skins.unshift('classic');
   normalizeFlames();
 }
 

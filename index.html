@@ -37,7 +37,7 @@
   body[data-theme="forest"] { --bg-grad-1: #1a3020; --bg-grad-2: #0d1a10; --bg-grad-3: #051005; }
   body[data-theme="sunset"] { --bg-grad-1: #3d1a0a; --bg-grad-2: #2a1520; --bg-grad-3: #1a0a15; }
   body[data-theme="minimal"] { --bg-grad-1: #1a1a1a; --bg-grad-2: #111111; --bg-grad-3: #0a0a0a; }
-  .app { display: flex; flex-direction: column; align-items: center; gap: 8px; width: min(100vw, 480px); height: 100vh; height: 100dvh; padding: 14px 16px 0; }
+  .app { display: flex; flex-direction: column; align-items: center; gap: 8px; width: min(100vw, 680px); height: 100vh; height: 100dvh; padding: 14px 16px 0; }
   #authScreen { justify-content: center; padding-bottom: 24px; overflow-y: auto; }
   .hide { display: none !important; }
 
@@ -183,7 +183,7 @@
 
   /* --- вкладка «Мои огоньки» --- */
   #flameView, #listView, #profileView { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; margin: auto 0; }
-  .create-row { display: flex; gap: 8px; width: min(380px, 100%); margin-top: 6px; }
+  .create-row { display: flex; gap: 8px; width: min(420px, 100%); margin-top: 6px; }
   .create-input {
     flex: 1; min-width: 0;
     background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.2);
@@ -199,7 +199,7 @@
   }
   .create-btn:hover { filter: brightness(1.08); }
   .create-btn:active { transform: scale(.96); }
-  .flame-list { display: flex; flex-direction: column; gap: 8px; width: min(380px, 100%); }
+  .flame-list { display: flex; flex-direction: column; gap: 8px; width: min(420px, 100%); }
   .flame-row {
     display: flex; align-items: center; gap: 10px; width: 100%;
     background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.12);
@@ -224,8 +224,8 @@
 
   /* --- вкладка «Профиль» --- */
   .profile-card {
-    display: flex; flex-direction: column; gap: 16px; width: min(360px, 100%);
-    background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.12);
+    display: flex; flex-direction: column; gap: 16px; width: min(420px, 100%);
+    background: var(--card-bg, rgba(255,255,255,.04)); border: 1px solid var(--card-border, rgba(255,255,255,.12));
     border-radius: 16px; padding: 18px; margin-top: 6px;
   }
   .profile-head { display: flex; align-items: center; justify-content: center; gap: 14px; }
@@ -707,7 +707,7 @@ const SKINS = [
   { id: 'gold',     name: 'Золотое',      css: 'saturate(2.2) brightness(1.25) hue-rotate(-10deg)', glow1: 'rgba(255,215,0,.7)', glow2: 'rgba(255,180,0,.4)', price: 300 },
   { id: 'rainbow',  name: 'Радуга',       css: '__rainbow__', glow1: 'rgba(255,255,255,.4)', glow2: 'rgba(200,200,255,.25)', price: 450 },
 ];
-const APP_VERSION = '20261003-113230';
+const APP_VERSION = '20261003-195616';
 const MAX_FREEZE = 2;
 const FREEZE_EVERY_DAYS = 7;
 
@@ -777,7 +777,7 @@ function saveUserData() {
   if (!current || !data) return;
   if (cloud) {
     const ref = cloud.fsMod.doc(cloud.db, 'users', cloud.user.uid);
-    cloud.fsMod.setDoc(ref, { flames: data.flames, activeId: data.activeId, name: data.name || '', avatar: data.avatar || '👤', discord: data.discord || '', skin: data.skin || 'classic', skins: data.skins || ['classic'], bestStreak: data.bestStreak || 0, pinnedAch: data.pinnedAch || '' })
+    cloud.fsMod.setDoc(ref, { flames: data.flames, activeId: data.activeId, name: data.name || '', avatar: data.avatar || '👤', discord: data.discord || '', skin: data.skin || 'classic', skins: data.skins || ['classic'], bestStreak: data.bestStreak || 0, pinnedAch: data.pinnedAch || '', theme: data.theme || 'dark', sound: data.sound || 'fire', particleColor: data.particleColor || 'orange' })
       .catch(e => console.warn('Не удалось сохранить в облако:', e && e.code));
     // лидерборд: лучшая живая серия + всего зажиганий + скин
     let bestStreak = 0, totalPresses = 0;
@@ -1982,6 +1982,10 @@ async function showApp() {
   } else {
     loadUserData();
   }
+  data.theme = data.theme || 'dark';
+  data.sound = data.sound || 'fire';
+  data.particleColor = data.particleColor || 'orange';
+  applyTheme();
   adminBtn.classList.toggle('hide', !isAdmin());
   showView('flame');
   render();
@@ -2194,7 +2198,7 @@ async function loadCloudData() {
     console.warn('Не удалось загрузить данные из облака:', e && e.code);
   }
   if (raw && Array.isArray(raw.flames) && raw.flames.length) {
-    data = { flames: raw.flames, activeId: raw.activeId, name: raw.name || '', avatar: raw.avatar || '👤', pinnedAch: raw.pinnedAch || '', skin: raw.skin || 'classic', skins: Array.isArray(raw.skins) ? raw.skins : ['classic'], bestStreak: raw.bestStreak || 0, discord: raw.discord || '' };
+    data = { flames: raw.flames, activeId: raw.activeId, name: raw.name || '', avatar: raw.avatar || '👤', pinnedAch: raw.pinnedAch || '', skin: raw.skin || 'classic', skins: Array.isArray(raw.skins) ? raw.skins : ['classic'], bestStreak: raw.bestStreak || 0, discord: raw.discord || '', theme: raw.theme || 'dark', sound: raw.sound || 'fire', particleColor: raw.particleColor || 'orange' };
   } else {
     const f = defaultFlame();
     data = { flames: [f], activeId: f.id, name: '', avatar: '👤' };

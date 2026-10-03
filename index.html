@@ -707,7 +707,7 @@ const SKINS = [
   { id: 'gold',     name: 'Золотое',      css: 'saturate(2.2) brightness(1.25) hue-rotate(-10deg)', glow1: 'rgba(255,215,0,.7)', glow2: 'rgba(255,180,0,.4)', price: 300 },
   { id: 'rainbow',  name: 'Радуга',       css: '__rainbow__', glow1: 'rgba(255,255,255,.4)', glow2: 'rgba(200,200,255,.25)', price: 450 },
 ];
-const APP_VERSION = '20261003-112312';
+const APP_VERSION = '20261003-113230';
 const MAX_FREEZE = 2;
 const FREEZE_EVERY_DAYS = 7;
 
@@ -1284,6 +1284,7 @@ function showView(v) {
   }
 }
 tabTopView.addEventListener('click', () => showView('top'));
+tabCustomView.addEventListener('click', () => showView('custom'));
 tabFlameView.addEventListener('click', () => showView('flame'));
 tabListView.addEventListener('click', () => showView('list'));
 tabProfileView.addEventListener('click', () => showView('profile'));

@@ -66,9 +66,8 @@
   .content { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; width: 100%; padding: 4px 0 12px; scrollbar-width: thin; }
   .bottom-nav {
     flex: none; display: flex; margin: 0 -16px; width: calc(100% + 32px);
-    border-top: 1px solid rgba(255,255,255,.09);
-    background: rgba(12,13,18,.9);
-    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(255,255,255,.06);
+    background: transparent;
     padding: 7px 10px calc(7px + env(safe-area-inset-bottom));
   }
   .nav-btn {
@@ -226,7 +225,7 @@
   .profile-card {
     display: flex; flex-direction: column; gap: 16px; width: min(420px, 100%);
     background: var(--card-bg, rgba(255,255,255,.04)); border: 1px solid var(--card-border, rgba(255,255,255,.12));
-    border-radius: 16px; padding: 18px; margin-top: 6px;
+    border-radius: 16px; padding: 18px 14px; margin-top: 6px;
   }
   .profile-head { display: flex; align-items: center; justify-content: center; gap: 14px; }
   .profile-avatar { font-size: 44px; line-height: 1; filter: drop-shadow(0 0 14px rgba(255,130,40,.35)); }
@@ -707,7 +706,7 @@ const SKINS = [
   { id: 'gold',     name: 'Золотое',      css: 'saturate(2.2) brightness(1.25) hue-rotate(-10deg)', glow1: 'rgba(255,215,0,.7)', glow2: 'rgba(255,180,0,.4)', price: 300 },
   { id: 'rainbow',  name: 'Радуга',       css: '__rainbow__', glow1: 'rgba(255,255,255,.4)', glow2: 'rgba(200,200,255,.25)', price: 450 },
 ];
-const APP_VERSION = '20261003-195616';
+const APP_VERSION = '20261003-200903';
 const MAX_FREEZE = 2;
 const FREEZE_EVERY_DAYS = 7;
 
@@ -2201,7 +2200,7 @@ async function loadCloudData() {
     data = { flames: raw.flames, activeId: raw.activeId, name: raw.name || '', avatar: raw.avatar || '👤', pinnedAch: raw.pinnedAch || '', skin: raw.skin || 'classic', skins: Array.isArray(raw.skins) ? raw.skins : ['classic'], bestStreak: raw.bestStreak || 0, discord: raw.discord || '', theme: raw.theme || 'dark', sound: raw.sound || 'fire', particleColor: raw.particleColor || 'orange' };
   } else {
     const f = defaultFlame();
-    data = { flames: [f], activeId: f.id, name: '', avatar: '👤' };
+    data = { flames: [f], activeId: f.id, name: '', avatar: '👤', theme: 'dark', sound: 'fire', particleColor: 'orange' };
     saveUserData(); // создаём документ в облаке
   }
   if (!data.flames.some(f => f.id === data.activeId)) data.activeId = data.flames[0].id;

@@ -455,16 +455,20 @@
     background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
     border-radius: 10px; padding: 8px 4px; width: 64px; text-align: center; transition: .2s;
   }
-  .ach-badge.earned { border-color: rgba(255,180,50,.4); background: rgba(255,180,50,.08); box-shadow: 0 0 8px rgba(255,180,50,.15); }
+  .ach-badge.earned { border-color: rgba(255,180,50,.4); background: rgba(255,180,50,.08); box-shadow: 0 0 8px rgba(255,180,50,.15); cursor: pointer; }
+  .ach-badge.pinned { border-color: rgba(255,122,26,.7); background: rgba(255,122,26,.12); box-shadow: 0 0 12px rgba(255,122,26,.3); }
+  .ach-badge.pinned::after { content: '📌'; position: absolute; top: -4px; right: -4px; font-size: 10px; }
+  .ach-badge { position: relative; }
   .ach-badge:not(.earned) { opacity: .25; filter: grayscale(1); }
   .ach-badge .ach-ico { font-size: 22px; line-height: 1; }
   .ach-badge .ach-name { font-size: 8px; color: rgba(255,255,255,.5); font-weight: 600; line-height: 1.2; }
 
   /* --- эволюция огонька --- */
-  .flame.evo-1 { font-size: clamp(118px, 37vw, 180px); }
-  .flame.evo-2 { font-size: clamp(126px, 40vw, 192px); filter: drop-shadow(0 0 35px rgba(255,115,0,.7)) drop-shadow(0 0 100px rgba(255,60,0,.45)); }
-  .flame.evo-3 { font-size: clamp(134px, 43vw, 205px); filter: drop-shadow(0 0 40px rgba(255,115,0,.8)) drop-shadow(0 0 110px rgba(255,60,0,.5)) drop-shadow(0 0 160px rgba(255,100,0,.3)); }
-  .flame.evo-4 { font-size: clamp(145px, 46vw, 220px); filter: drop-shadow(0 0 45px rgba(255,115,0,.85)) drop-shadow(0 0 120px rgba(255,60,0,.55)) drop-shadow(0 0 180px rgba(255,100,0,.35)) drop-shadow(0 0 240px rgba(255,150,0,.2)); }
+  .flame.evo-0 { font-size: clamp(70px, 22vw, 110px); filter: drop-shadow(0 0 12px rgba(255,180,80,.4)); }
+  .flame.evo-1 { font-size: clamp(100px, 32vw, 160px); }
+  .flame.evo-2 { font-size: clamp(120px, 38vw, 185px); filter: drop-shadow(0 0 30px rgba(255,115,0,.65)) drop-shadow(0 0 90px rgba(255,60,0,.4)); }
+  .flame.evo-3 { font-size: clamp(135px, 42vw, 200px); filter: drop-shadow(0 0 40px rgba(255,80,0,.75)) drop-shadow(0 0 100px rgba(255,40,0,.5)) drop-shadow(0 0 150px rgba(255,60,0,.3)); animation: flicker 1.1s ease-in-out infinite; }
+  .flame.evo-4 { font-size: clamp(150px, 46vw, 220px); filter: drop-shadow(0 0 45px rgba(255,100,0,.8)) drop-shadow(0 0 110px rgba(255,50,0,.55)) drop-shadow(0 0 170px rgba(255,80,0,.35)) drop-shadow(0 0 220px rgba(255,120,0,.2)); animation: flicker .8s ease-in-out infinite; }
   .flame.dead.evo-1, .flame.dead.evo-2, .flame.dead.evo-3, .flame.dead.evo-4 { filter: grayscale(.9) brightness(.4) !important; opacity: .3; }
   .flame.skin-rainbow.evo-1, .flame.skin-rainbow.evo-2, .flame.skin-rainbow.evo-3, .flame.skin-rainbow.evo-4 { filter: none; }
   .evo-label { font-size: 11px; color: rgba(255,255,255,.3); text-align: center; }
@@ -698,7 +702,7 @@ const SKINS = [
   { id: 'gold',     name: 'Золотое',      css: 'saturate(2.2) brightness(1.25) hue-rotate(-10deg)', glow1: 'rgba(255,215,0,.7)', glow2: 'rgba(255,180,0,.4)', price: 300 },
   { id: 'rainbow',  name: 'Радуга',       css: '__rainbow__', glow1: 'rgba(255,255,255,.4)', glow2: 'rgba(200,200,255,.25)', price: 450 },
 ];
-const APP_VERSION = '20261002-210412';
+const APP_VERSION = '20261003-101404';
 const MAX_FREEZE = 2;
 const FREEZE_EVERY_DAYS = 7;
 
@@ -768,7 +772,7 @@ function saveUserData() {
   if (!current || !data) return;
   if (cloud) {
     const ref = cloud.fsMod.doc(cloud.db, 'users', cloud.user.uid);
-    cloud.fsMod.setDoc(ref, { flames: data.flames, activeId: data.activeId, name: data.name || '', avatar: data.avatar || '👤', discord: data.discord || '', skin: data.skin || 'classic', skins: data.skins || ['classic'], bestStreak: data.bestStreak || 0 })
+    cloud.fsMod.setDoc(ref, { flames: data.flames, activeId: data.activeId, name: data.name || '', avatar: data.avatar || '👤', discord: data.discord || '', skin: data.skin || 'classic', skins: data.skins || ['classic'], bestStreak: data.bestStreak || 0, pinnedAch: data.pinnedAch || '' })
       .catch(e => console.warn('Не удалось сохранить в облако:', e && e.code));
     // лидерборд: лучшая живая серия + всего зажиганий + скин
     let bestStreak = 0, totalPresses = 0;
@@ -785,6 +789,7 @@ function saveUserData() {
       skinCss: skinObj.css,
       streak: bestStreak,
       presses: totalPresses,
+      pinnedAch: data.pinnedAch || '',
       litToday: data.flames.some(f => f.last === today()),
       updatedAt: cloud.fsMod.serverTimestamp()
     }).catch(e => console.warn('leaderboard:', e && e.code));
@@ -885,26 +890,26 @@ const PARTICLE_COLORS = [
 
 /* --- ачивки --- */
 const ACHIEVEMENTS = [
-  { id: 'first', ico: '🔥', name: 'Первое пламя', desc: 'Первое зажигание', check: () => totalPressesGlobal() >= 1 },
-  { id: 'week', ico: '💪', name: 'Неделя силы', desc: 'Серия 7 дней', check: () => maxStreakGlobal() >= 7 },
-  { id: 'month', ico: '👑', name: 'Месяц огня', desc: 'Серия 30 дней', check: () => maxStreakGlobal() >= 30 },
-  { id: 'hundred', ico: '⚡', name: 'Сотка', desc: '100 зажиганий', check: () => totalPressesGlobal() >= 100 },
-  { id: 'collector', ico: '🎯', name: 'Коллекционер', desc: '5 огоньков', check: () => data.flames.length >= 5 },
-  { id: 'freeze', ico: '🧊', name: 'Ледяное сердце', desc: 'Имеет заморозку', check: () => data.flames.some(f => (f.freeze || 0) > 0) },
-  { id: 'phoenix', ico: '💀', name: 'Феникс', desc: 'Сгорел и возродился', check: () => data.flames.some(f => f.count > 5 && f.streak >= 3 && (data.bestStreak || 0) > f.streak) },
-  { id: 'skin', ico: '🎨', name: 'Модник', desc: 'Не классический скин', check: () => data.skin && data.skin !== 'classic' },
-  { id: 'discord', ico: '🎮', name: 'Геймер', desc: 'Привязан Discord', check: () => !!data.discord },
+  { id: 'first', ico: '🔥', name: 'Первое пламя', desc: 'Первое зажигание', cond: 'Зажги огонёк 1 раз', check: () => totalPressesGlobal() >= 1 },
+  { id: 'week', ico: '💪', name: 'Неделя силы', desc: 'Серия 7 дней', cond: 'Серия 7 дней без пропусков', check: () => maxStreakGlobal() >= 7 },
+  { id: 'month', ico: '👑', name: 'Месяц огня', desc: 'Серия 30 дней', cond: 'Серия 30 дней без пропусков', check: () => maxStreakGlobal() >= 30 },
+  { id: 'hundred', ico: '⚡', name: 'Сотка', desc: '100 зажиганий', cond: 'Всего 100 зажиганий', check: () => totalPressesGlobal() >= 100 },
+  { id: 'collector', ico: '🎯', name: 'Коллекционер', desc: '5 огоньков', cond: 'Создай 5 огоньков', check: () => data.flames.length >= 5 },
+  { id: 'freeze', ico: '🧊', name: 'Ледяное сердце', desc: 'Имеет заморозку', cond: 'Продержи серию 7 дней (даёт ❄️)', check: () => data.flames.some(f => (f.freeze || 0) > 0) },
+  { id: 'phoenix', ico: '💀', name: 'Феникс', desc: 'Сгорел и возродился', cond: 'Потеряй серию и достигни 3 заново', check: () => data.flames.some(f => f.count > 5 && f.streak >= 3 && (data.bestStreak || 0) > f.streak) },
+  { id: 'skin', ico: '🎨', name: 'Модник', desc: 'Не классический скин', cond: 'Надень любой скин кроме классики', check: () => data.skin && data.skin !== 'classic' },
+  { id: 'discord', ico: '🎮', name: 'Геймер', desc: 'Привязан Discord', cond: 'Привяжи Discord в профиле', check: () => !!data.discord },
 ];
 function totalPressesGlobal() { return data.flames.reduce((s, f) => s + (f.count || 0), 0); }
 function maxStreakGlobal() { return Math.max(...data.flames.map(f => f.streak || 0), data.bestStreak || 0); }
 
 /* --- эволюция --- */
 const EVO_TIERS = [
-  { min: 0, cls: '', label: '🔥 Спичка' },
-  { min: 3, cls: 'evo-1', label: '🕯 Свеча' },
-  { min: 7, cls: 'evo-2', label: '🔥 Костёр' },
-  { min: 14, cls: 'evo-3', label: '🌋 Вулкан' },
-  { min: 30, cls: 'evo-4', label: '☀️ Сверхновая' },
+  { min: 0,  emoji: '🕯️', cls: 'evo-0', label: '🕯️ Спичка',    sub: 'тлеет' },
+  { min: 3,  emoji: '🔥', cls: 'evo-1', label: '🔥 Огонёк',   sub: 'разгорается' },
+  { min: 7,  emoji: '🔥', cls: 'evo-2', label: '🔥 Костёр',   sub: 'полыхает' },
+  { min: 14, emoji: '🌋', cls: 'evo-3', label: '🌋 Вулкан',   sub: 'взрывной' },
+  { min: 30, emoji: '☄️', cls: 'evo-4', label: '☄️ Комета',   sub: 'неостановимый' },
 ];
 function evoTier(streak) { let t = EVO_TIERS[0]; for (const e of EVO_TIERS) { if (streak >= e.min) t = e; } return t; }
 
@@ -1003,7 +1008,8 @@ function plural(n, forms) {
 function updateChip() {
   const av = (data && data.avatar) || '👤';
   const nm = (cloud && data && data.name) ? data.name : current;
-  userChip.textContent = av + ' ' + nm;
+  const pin = data && data.pinnedAch ? ACHIEVEMENTS.find(a => a.id === data.pinnedAch) : null;
+  userChip.textContent = (pin ? pin.ico + ' ' : '') + av + ' ' + nm;
 }
 
 /* --- скины --- */
@@ -1093,7 +1099,8 @@ function renderSkins() {
 function updateChip() {
   const av = (data && data.avatar) || '👤';
   const nm = (cloud && data && data.name) ? data.name : current;
-  userChip.textContent = av + ' ' + nm;
+  const pin = data && data.pinnedAch ? ACHIEVEMENTS.find(a => a.id === data.pinnedAch) : null;
+  userChip.textContent = (pin ? pin.ico + ' ' : '') + av + ' ' + nm;
 }
 
 function render() {
@@ -1126,11 +1133,12 @@ function render() {
   flameBtn.classList.toggle('done', !can);
   flameBtn.classList.toggle('dead', dead && can);
   flameBtn.disabled = !can;
-  // эволюция огонька
+  // эволюция огонька: меняем эмодзи + CSS класс
   const tier = evoTier(f.streak);
-  flame.classList.remove('evo-1', 'evo-2', 'evo-3', 'evo-4');
+  flame.textContent = tier.emoji;
+  flame.classList.remove('evo-0', 'evo-1', 'evo-2', 'evo-3', 'evo-4');
   if (tier.cls) flame.classList.add(tier.cls);
-  evoLabel.innerHTML = 'Эволюция: <b>' + tier.label + '</b>';
+  evoLabel.innerHTML = 'Эволюция: <b>' + tier.label + '</b> — ' + tier.sub;
   if (!can) {
     statusEl.className = 'status';
     statusEl.innerHTML = 'Уже горит! Следующий через <span class="timer">' + fmt(msToMidnight()) + '</span>';
@@ -1414,7 +1422,8 @@ async function renderTop() {
       main.className = 'top-main';
       const nm = document.createElement('div');
       nm.className = 'top-name';
-      nm.textContent = r.name + (cloud.user && r.id === cloud.user.uid ? ' (ты)' : '');
+      const pinAch = r.pinnedAch ? ACHIEVEMENTS.find(a => a.id === r.pinnedAch) : null;
+      nm.textContent = r.name + (cloud.user && r.id === cloud.user.uid ? ' (ты)' : '') + (pinAch ? ' ' + pinAch.ico : '');
       const sub = document.createElement('div');
       sub.className = 'top-sub';
       sub.textContent = (r.litToday ? '🔥 горит сегодня' : 'отдыхает');
@@ -1466,11 +1475,22 @@ function renderAchievements() {
   achGrid.textContent = '';
   ACHIEVEMENTS.forEach(a => {
     const earned = a.check();
+    const pinned = (data.pinnedAch || '') === a.id;
     const b = document.createElement('div');
-    b.className = 'ach-badge' + (earned ? ' earned' : '');
-    b.title = a.desc;
+    b.className = 'ach-badge' + (earned ? ' earned' : '') + (pinned ? ' pinned' : '');
+    b.title = earned ? (pinned ? 'Прикреплено — кликни чтобы открепить' : 'Кликни чтобы закрепить у ника') : a.cond;
     const ico = document.createElement('div'); ico.className = 'ach-ico'; ico.textContent = a.ico;
-    const nm = document.createElement('div'); nm.className = 'ach-name'; nm.textContent = a.name;
+    const nm = document.createElement('div'); nm.className = 'ach-name'; nm.textContent = earned ? a.name : a.cond;
+    if (earned) {
+      b.style.cursor = 'pointer';
+      b.addEventListener('click', () => {
+        data.pinnedAch = pinned ? '' : a.id;
+        saveUserData();
+        renderAchievements();
+        render();
+        if (!listViewEl.classList.contains('hide')) renderTop();
+      });
+    }
     b.append(ico, nm);
     achGrid.appendChild(b);
   });
@@ -2173,7 +2193,7 @@ async function loadCloudData() {
     console.warn('Не удалось загрузить данные из облака:', e && e.code);
   }
   if (raw && Array.isArray(raw.flames) && raw.flames.length) {
-    data = { flames: raw.flames, activeId: raw.activeId, name: raw.name || '', avatar: raw.avatar || '👤' };
+    data = { flames: raw.flames, activeId: raw.activeId, name: raw.name || '', avatar: raw.avatar || '👤', pinnedAch: raw.pinnedAch || '' };
   } else {
     const f = defaultFlame();
     data = { flames: [f], activeId: f.id, name: '', avatar: '👤' };

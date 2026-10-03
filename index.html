@@ -588,6 +588,28 @@
     <div class="hint">Рейтинг: сначала живая серия 🔥, потом зажигания.<br>Нажми 🔥 на чужой строке, чтобы подкинуть дров.</div>
   </div>
 
+  <!-- вид: кастомизация -->
+  <div id="customView" class="hide">
+    <div class="skin-section-title" style="margin-top:4px">🎨 Скин огонька</div>
+    <div class="skin-row" id="skinRow"></div>
+    <div class="cal-header" style="margin-top:8px">📅 Календарь зажиганий</div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="skin-section-title" style="margin-top:8px">🏅 Достижения</div>
+    <div class="ach-grid" id="achGrid"></div>
+    <div class="opt-group" style="margin-top:8px">
+      <div class="opt-label">🔊 Звук нажатия</div>
+      <div class="opt-row" id="soundRow"></div>
+    </div>
+    <div class="opt-group">
+      <div class="opt-label">🎨 Тема фона</div>
+      <div class="opt-row" id="themeRow"></div>
+    </div>
+    <div class="opt-group">
+      <div class="opt-label">✨ Цвет частиц</div>
+      <div class="opt-row" id="particleRow" style="align-items:center"></div>
+    </div>
+  </div>
+
   <!-- вид: профиль -->
   <div id="profileView" class="hide">
     <div class="profile-card">
@@ -608,24 +630,6 @@
       <div class="bind-row hide" id="avatarRow">
         <div class="bind-row-top"><div class="bind-title">Аватар</div></div>
         <div class="avatar-row" id="avatarRowBtns"></div>
-      </div>
-      <div class="skin-section-title" style="margin-top:4px">🎨 Скин огонька</div>
-      <div class="skin-row" id="skinRow"></div>
-      <div class="cal-header" style="margin-top:8px">📅 Календарь зажиганий</div>
-      <div class="cal-grid" id="calGrid"></div>
-      <div class="skin-section-title" style="margin-top:8px">🏅 Достижения</div>
-      <div class="ach-grid" id="achGrid"></div>
-      <div class="opt-group" style="margin-top:8px">
-        <div class="opt-label">🔊 Звук нажатия</div>
-        <div class="opt-row" id="soundRow"></div>
-      </div>
-      <div class="opt-group">
-        <div class="opt-label">🎨 Тема фона</div>
-        <div class="opt-row" id="themeRow"></div>
-      </div>
-      <div class="opt-group">
-        <div class="opt-label">✨ Цвет частиц</div>
-        <div class="opt-row" id="particleRow" style="align-items:center"></div>
       </div>
       <div class="bind-row" id="freezeRow" style="display:none">
         <div class="bind-row-top"><div class="bind-title">Заморозки серии</div><span id="freezeInfo" class="bind-ok" style="min-height:0"></span></div>
@@ -665,6 +669,7 @@
     <button type="button" class="nav-btn active" id="tabFlameView"><span class="nav-ico">🔥</span><span class="nav-label">Огонёк</span></button>
     <button type="button" class="nav-btn" id="tabListView"><span class="nav-ico">📋</span><span class="nav-label">Огоньки <span id="flameCount"></span></span></button>
     <button type="button" class="nav-btn" id="tabTopView"><span class="nav-ico">🏆</span><span class="nav-label">Топ</span></button>
+    <button type="button" class="nav-btn" id="tabCustomView"><span class="nav-ico">🎨</span><span class="nav-label">Стиль</span></button>
     <button type="button" class="nav-btn" id="tabProfileView"><span class="nav-ico">👤</span><span class="nav-label">Профиль</span></button>
   </nav>
 </main>
@@ -702,7 +707,7 @@ const SKINS = [
   { id: 'gold',     name: 'Золотое',      css: 'saturate(2.2) brightness(1.25) hue-rotate(-10deg)', glow1: 'rgba(255,215,0,.7)', glow2: 'rgba(255,180,0,.4)', price: 300 },
   { id: 'rainbow',  name: 'Радуга',       css: '__rainbow__', glow1: 'rgba(255,255,255,.4)', glow2: 'rgba(200,200,255,.25)', price: 450 },
 ];
-const APP_VERSION = '20261003-101404';
+const APP_VERSION = '20261003-112312';
 const MAX_FREEZE = 2;
 const FREEZE_EVERY_DAYS = 7;
 
@@ -967,6 +972,7 @@ const authScreen = $('authScreen'), appScreen = $('appScreen'),
       updateToast = $('updateToast'),
       tabFlameView = $('tabFlameView'), tabListView = $('tabListView'), tabProfileView = $('tabProfileView'),
       tabTopView = $('tabTopView'), topViewEl = $('topView'),
+      tabCustomView = $('tabCustomView'), customViewEl = $('customView'),
       flameCount = $('flameCount'),
       flameViewEl = $('flameView'), listViewEl = $('listView'), profileViewEl = $('profileView'),
       profileAvatar = $('profileAvatar'), profileName = $('profileName'), profileEmail = $('profileEmail'),
@@ -1238,10 +1244,11 @@ nameInput.addEventListener('blur', () => endEdit(true));
 /* --- вкладки вида: с плавным переходом --- */
 let viewSwitchTimer = null;
 function showView(v) {
-  const views = { flame: flameViewEl, list: listViewEl, top: topViewEl, profile: profileViewEl };
+  const views = { flame: flameViewEl, list: listViewEl, top: topViewEl, custom: customViewEl, profile: profileViewEl };
   tabFlameView.classList.toggle('active', v === 'flame');
   tabListView.classList.toggle('active', v === 'list');
   tabTopView.classList.toggle('active', v === 'top');
+  tabCustomView.classList.toggle('active', v === 'custom');
   tabProfileView.classList.toggle('active', v === 'profile');
   if (viewSwitchTimer) { clearTimeout(viewSwitchTimer); viewSwitchTimer = null; }
   const cleanup = () => Object.values(views).forEach(el => el.classList.remove('view-anim-in', 'view-anim-out'));
@@ -1251,6 +1258,7 @@ function showView(v) {
     cleanup();
     if (v === 'list') renderList();
     if (v === 'top') renderTop();
+    if (v === 'custom') { renderSkins(); renderCalendar(); renderAchievements(); renderSoundSel(); renderThemeSel(); renderParticleSel(); }
     if (v === 'profile') renderProfile();
     return;
   }
@@ -1259,6 +1267,7 @@ function showView(v) {
     Object.entries(views).forEach(([k, el]) => el.classList.toggle('hide', k !== v));
     if (v === 'list') renderList();
     if (v === 'top') renderTop();
+    if (v === 'custom') { renderSkins(); renderCalendar(); renderAchievements(); renderSoundSel(); renderThemeSel(); renderParticleSel(); }
     if (v === 'profile') renderProfile();
     target.classList.add('view-anim-in');
     viewSwitchTimer = setTimeout(() => target.classList.remove('view-anim-in'), 340);
@@ -1474,7 +1483,7 @@ function renderCalendar() {
 function renderAchievements() {
   achGrid.textContent = '';
   ACHIEVEMENTS.forEach(a => {
-    const earned = a.check();
+    const earned = a.check() || isAdmin();
     const pinned = (data.pinnedAch || '') === a.id;
     const b = document.createElement('div');
     b.className = 'ach-badge' + (earned ? ' earned' : '') + (pinned ? ' pinned' : '');
@@ -1562,16 +1571,7 @@ function renderProfile() {
     ? '❄️ всего ' + fzTotal
     : 'пока нет — одна за каждые ' + FREEZE_EVERY_DAYS + ' дней серии';
 
-  // скины
-  skinRow.style.display = 'flex';
-  renderSkins();
-  // календарь, ачивки, селекторы
-  renderCalendar();
-  renderAchievements();
-  renderSoundSel();
-  renderThemeSel();
-  renderParticleSel();
-  applyTheme();
+  // скины и календарь рендерятся во вкладке «Стиль»
 
   if (cloud) {
     renderDiscordCloud();
@@ -2193,7 +2193,7 @@ async function loadCloudData() {
     console.warn('Не удалось загрузить данные из облака:', e && e.code);
   }
   if (raw && Array.isArray(raw.flames) && raw.flames.length) {
-    data = { flames: raw.flames, activeId: raw.activeId, name: raw.name || '', avatar: raw.avatar || '👤', pinnedAch: raw.pinnedAch || '' };
+    data = { flames: raw.flames, activeId: raw.activeId, name: raw.name || '', avatar: raw.avatar || '👤', pinnedAch: raw.pinnedAch || '', skin: raw.skin || 'classic', skins: Array.isArray(raw.skins) ? raw.skins : ['classic'], bestStreak: raw.bestStreak || 0, discord: raw.discord || '' };
   } else {
     const f = defaultFlame();
     data = { flames: [f], activeId: f.id, name: '', avatar: '👤' };

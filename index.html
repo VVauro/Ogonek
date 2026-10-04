@@ -591,7 +591,9 @@
   <div id="customView" class="hide">
     <div class="skin-section-title" style="margin-top:4px">🎨 Скин огонька</div>
     <div class="skin-row" id="skinRow"></div>
-    <div class="cal-header" style="margin-top:8px">📅 Календарь зажиганий</div>
+      <div class="skin-section-title" style="margin-top:8px">🧬 Эволюция огонька</div>
+      <div class="skin-row" id="evoRow"></div>
+      <div class="cal-header" style="margin-top:8px">📅 Календарь зажиганий</div>
     <div class="cal-grid" id="calGrid"></div>
     <div class="skin-section-title" style="margin-top:8px">🏅 Достижения</div>
     <div class="ach-grid" id="achGrid"></div>
@@ -706,7 +708,7 @@ const SKINS = [
   { id: 'gold',     name: 'Золотое',      css: 'saturate(2.2) brightness(1.25) hue-rotate(-10deg)', glow1: 'rgba(255,215,0,.7)', glow2: 'rgba(255,180,0,.4)', price: 300 },
   { id: 'rainbow',  name: 'Радуга',       css: '__rainbow__', glow1: 'rgba(255,255,255,.4)', glow2: 'rgba(200,200,255,.25)', price: 450 },
 ];
-const APP_VERSION = '20261003-200903';
+const APP_VERSION = '20261004-062349';
 const MAX_FREEZE = 2;
 const FREEZE_EVERY_DAYS = 7;
 
@@ -749,6 +751,7 @@ function loadUserData() {
   data.skin = data.skin || 'classic';
   data.skins = Array.isArray(data.skins) ? data.skins : ['classic'];
   data.bestStreak = data.bestStreak || 0;
+  data.evo = data.evo || 'auto';
   if (!data.skins.includes('classic')) data.skins.unshift('classic');
   normalizeFlames();
 }
@@ -776,7 +779,7 @@ function saveUserData() {
   if (!current || !data) return;
   if (cloud) {
     const ref = cloud.fsMod.doc(cloud.db, 'users', cloud.user.uid);
-    cloud.fsMod.setDoc(ref, { flames: data.flames, activeId: data.activeId, name: data.name || '', avatar: data.avatar || '👤', discord: data.discord || '', skin: data.skin || 'classic', skins: data.skins || ['classic'], bestStreak: data.bestStreak || 0, pinnedAch: data.pinnedAch || '', theme: data.theme || 'dark', sound: data.sound || 'fire', particleColor: data.particleColor || 'orange' })
+    cloud.fsMod.setDoc(ref, { flames: data.flames, activeId: data.activeId, name: data.name || '', avatar: data.avatar || '👤', discord: data.discord || '', skin: data.skin || 'classic', skins: data.skins || ['classic'], bestStreak: data.bestStreak || 0, pinnedAch: data.pinnedAch || '', theme: data.theme || 'dark', sound: data.sound || 'fire', particleColor: data.particleColor || 'orange', evo: data.evo || 'auto' })
       .catch(e => console.warn('Не удалось сохранить в облако:', e && e.code));
     // лидерборд: лучшая живая серия + всего зажиганий + скин
     let bestStreak = 0, totalPresses = 0;
@@ -909,13 +912,65 @@ function maxStreakGlobal() { return Math.max(...data.flames.map(f => f.streak ||
 
 /* --- эволюция --- */
 const EVO_TIERS = [
-  { min: 0,  emoji: '🕯️', cls: 'evo-0', label: '🕯️ Спичка',    sub: 'тлеет' },
-  { min: 3,  emoji: '🔥', cls: 'evo-1', label: '🔥 Огонёк',   sub: 'разгорается' },
-  { min: 7,  emoji: '🔥', cls: 'evo-2', label: '🔥 Костёр',   sub: 'полыхает' },
-  { min: 14, emoji: '🌋', cls: 'evo-3', label: '🌋 Вулкан',   sub: 'взрывной' },
-  { min: 30, emoji: '☄️', cls: 'evo-4', label: '☄️ Комета',   sub: 'неостановимый' },
+  { id: 'auto',   emoji: '',   cls: '',      label: 'Авто',       sub: 'по серии',    unlockStreak: 0 },
+  { id: 'match',  emoji: '🕯️', cls: 'evo-0', label: 'Спичка',    sub: 'тлеет',        unlockStreak: 0 },
+  { id: 'fire',   emoji: '🔥', cls: 'evo-1', label: 'Огонёк',    sub: 'разгорается',  unlockStreak: 3 },
+  { id: 'campfire', emoji: '🔥', cls: 'evo-2', label: 'Костёр',  sub: 'полыхает',     unlockStreak: 7 },
+  { id: 'volcano', emoji: '🌋', cls: 'evo-3', label: 'Вулкан',  sub: 'взрывной',     unlockStreak: 14 },
+  { id: 'comet',  emoji: '☄️', cls: 'evo-3', label: 'Комета',   sub: 'стремительный', unlockStreak: 21 },
+  { id: 'nova',   emoji: '💥', cls: 'evo-4', label: 'Сверхновая', sub: 'неостановимый', unlockStreak: 30, price: 400 },
 ];
 function evoTier(streak) { let t = EVO_TIERS[0]; for (const e of EVO_TIERS) { if (streak >= e.min) t = e; } return t; }
+function getEvo() {
+  const sel = data.evo || 'auto';
+  if (sel === 'auto') return evoTier(activeFlame().streak || 0);
+  const found = EVO_TIERS.find(e => e.id === sel);
+  return found || evoTier(activeFlame().streak || 0);
+}
+function evoUnlocked(e) {
+  if (isAdmin()) return true;
+  if (e.id === 'auto' || e.unlockStreak === 0) return true;
+  return maxStreakGlobal() >= (e.unlockStreak || 0);
+}
+function renderEvoSel() {
+  const row = $('evoRow');
+  if (!row) return;
+  row.textContent = '';
+  EVO_TIERS.forEach(e => {
+    const unlocked = evoUnlocked(e);
+    const sel = (data.evo || 'auto') === e.id;
+    const btn = document.createElement('button');
+    btn.className = 'skin-btn' + (sel ? ' sel' : '') + (!unlocked ? ' locked' : '');
+    const fl = document.createElement('span');
+    fl.className = 'skin-flame';
+    fl.textContent = e.emoji;
+    const nm = document.createElement('span');
+    nm.className = 'skin-name';
+    nm.textContent = e.label.replace(/^[^ ]+ /, '');
+    btn.append(fl, nm);
+    if (!unlocked) {
+      const hint = document.createElement('span');
+      hint.className = 'skin-hint';
+      hint.textContent = '🔒 ' + e.unlockStreak + ' дн.';
+      hint.style.color = 'rgba(255,255,255,.35)';
+      btn.appendChild(hint);
+    } else if (sel) {
+      const hint = document.createElement('span');
+      hint.className = 'skin-hint';
+      hint.textContent = '✓';
+      hint.style.color = '#ffb14d';
+      btn.appendChild(hint);
+    }
+    btn.addEventListener('click', () => {
+      if (!evoUnlocked(e)) return;
+      data.evo = e.id;
+      saveUserData();
+      renderEvoSel();
+      render();
+    });
+    row.appendChild(btn);
+  });
+}
 
 // пропуск дня: если есть ❄️ заморозка — серию спасаем (мостик через пропущенный день),
 // иначе серия сгорает до нуля
@@ -1138,9 +1193,9 @@ function render() {
   flameBtn.classList.toggle('done', !can);
   flameBtn.classList.toggle('dead', dead && can);
   flameBtn.disabled = !can;
-  // эволюция огонька: меняем эмодзи + CSS класс
-  const tier = evoTier(f.streak);
-  flame.textContent = tier.emoji;
+  // эволюция огонька: меняем эмодзи + CSS класс (по выбору или авто)
+  const tier = getEvo();
+  flame.textContent = tier.emoji || '🔥';
   flame.classList.remove('evo-0', 'evo-1', 'evo-2', 'evo-3', 'evo-4');
   if (tier.cls) flame.classList.add(tier.cls);
   evoLabel.innerHTML = 'Эволюция: <b>' + tier.label + '</b> — ' + tier.sub;
@@ -1257,7 +1312,7 @@ function showView(v) {
     cleanup();
     if (v === 'list') renderList();
     if (v === 'top') renderTop();
-    if (v === 'custom') { renderSkins(); renderCalendar(); renderAchievements(); renderSoundSel(); renderThemeSel(); renderParticleSel(); }
+    if (v === 'custom') { renderSkins(); renderEvoSel(); renderCalendar(); renderAchievements(); renderSoundSel(); renderThemeSel(); renderParticleSel(); }
     if (v === 'profile') renderProfile();
     return;
   }
@@ -1266,7 +1321,7 @@ function showView(v) {
     Object.entries(views).forEach(([k, el]) => el.classList.toggle('hide', k !== v));
     if (v === 'list') renderList();
     if (v === 'top') renderTop();
-    if (v === 'custom') { renderSkins(); renderCalendar(); renderAchievements(); renderSoundSel(); renderThemeSel(); renderParticleSel(); }
+    if (v === 'custom') { renderSkins(); renderEvoSel(); renderCalendar(); renderAchievements(); renderSoundSel(); renderThemeSel(); renderParticleSel(); }
     if (v === 'profile') renderProfile();
     target.classList.add('view-anim-in');
     viewSwitchTimer = setTimeout(() => target.classList.remove('view-anim-in'), 340);
@@ -2197,7 +2252,7 @@ async function loadCloudData() {
     console.warn('Не удалось загрузить данные из облака:', e && e.code);
   }
   if (raw && Array.isArray(raw.flames) && raw.flames.length) {
-    data = { flames: raw.flames, activeId: raw.activeId, name: raw.name || '', avatar: raw.avatar || '👤', pinnedAch: raw.pinnedAch || '', skin: raw.skin || 'classic', skins: Array.isArray(raw.skins) ? raw.skins : ['classic'], bestStreak: raw.bestStreak || 0, discord: raw.discord || '', theme: raw.theme || 'dark', sound: raw.sound || 'fire', particleColor: raw.particleColor || 'orange' };
+    data = { flames: raw.flames, activeId: raw.activeId, name: raw.name || '', avatar: raw.avatar || '👤', pinnedAch: raw.pinnedAch || '', skin: raw.skin || 'classic', skins: Array.isArray(raw.skins) ? raw.skins : ['classic'], bestStreak: raw.bestStreak || 0, discord: raw.discord || '', theme: raw.theme || 'dark', sound: raw.sound || 'fire', particleColor: raw.particleColor || 'orange', evo: raw.evo || 'auto' };
   } else {
     const f = defaultFlame();
     data = { flames: [f], activeId: f.id, name: '', avatar: '👤', theme: 'dark', sound: 'fire', particleColor: 'orange' };
@@ -2208,6 +2263,7 @@ async function loadCloudData() {
   data.skin = data.skin || 'classic';
   data.skins = Array.isArray(data.skins) ? data.skins : ['classic'];
   data.bestStreak = data.bestStreak || 0;
+  data.evo = data.evo || 'auto';
   if (!data.skins.includes('classic')) data.skins.unshift('classic');
   normalizeFlames();
 }
